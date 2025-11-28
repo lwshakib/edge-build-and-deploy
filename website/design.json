@@ -1,0 +1,299 @@
+{
+    "projectName": "Edge: Build & Deploy Landing Page",
+    "version": "1.0.0",
+    "techStack": {
+      "framework": "Next.js 14+",
+      "styling": "Tailwind CSS",
+      "animations": "Framer Motion",
+      "icons": "Lucide React"
+    },
+    "colorPalette": {
+      "background": {
+        "primary": "#0A0E1A",
+        "secondary": "#111827",
+        "card": "#1F2937"
+      },
+      "accent": {
+        "primary": "#0EA5E9",
+        "secondary": "#06B6D4",
+        "gradient": "linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)"
+      },
+      "text": {
+        "primary": "#F9FAFB",
+        "secondary": "#9CA3AF",
+        "muted": "#6B7280"
+      },
+      "interactive": {
+        "hover": "#0284C7",
+        "success": "#10B981",
+        "warning": "#F59E0B"
+      }
+    },
+    "typography": {
+      "fonts": {
+        "heading": "Inter, system-ui, sans-serif",
+        "body": "Inter, system-ui, sans-serif",
+        "code": "'Fira Code', 'JetBrains Mono', monospace"
+      },
+      "scale": {
+        "h1": "3.5rem / 4.5rem (mobile: 2.5rem)",
+        "h2": "2.5rem / 3rem (mobile: 2rem)",
+        "h3": "1.875rem / 2.25rem (mobile: 1.5rem)",
+        "body": "1rem / 1.5rem",
+        "small": "0.875rem / 1.25rem"
+      },
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      }
+    },
+    "layout": {
+      "maxWidth": "1280px",
+      "containerPadding": "1rem (mobile) / 2rem (desktop)",
+      "sectionSpacing": "5rem (mobile) / 8rem (desktop)",
+      "grid": {
+        "columns": "12",
+        "gap": "1.5rem"
+      }
+    },
+    "sections": [
+      {
+        "name": "Hero",
+        "height": "100vh (min: 600px)",
+        "elements": [
+          {
+            "component": "Headline",
+            "text": "Deploy React & HTML Apps in Seconds",
+            "animation": "fadeInUp",
+            "delay": 0
+          },
+          {
+            "component": "Subheadline",
+            "text": "Zero config, instant previews, global CDN. The fastest way from code to production.",
+            "animation": "fadeInUp",
+            "delay": 0.2
+          },
+          {
+            "component": "CTA Buttons",
+            "primary": "Start Deploying Free",
+            "secondary": "View Live Demo",
+            "animation": "fadeInUp",
+            "delay": 0.4
+          },
+          {
+            "component": "Terminal Mockup",
+            "content": "Animated deployment sequence",
+            "animation": "slideInRight",
+            "delay": 0.6,
+            "features": ["Typing animation", "Success checkmarks", "Deploy progress"]
+          },
+          {
+            "component": "Floating Badges",
+            "items": ["React", "Next.js", "HTML5", "Vite"],
+            "animation": "float",
+            "continuous": true
+          }
+        ],
+        "background": {
+          "type": "gradient + grid pattern",
+          "effect": "Animated gradient mesh with subtle grid overlay"
+        }
+      },
+      {
+        "name": "Features",
+        "layout": "grid",
+        "columns": "3 (desktop) / 1 (mobile)",
+        "cards": [
+          {
+            "icon": "Zap",
+            "title": "Lightning Fast Deploys",
+            "description": "From git push to live URL in under 30 seconds. No waiting, no configuration.",
+            "animation": "fadeInScale",
+            "hoverEffect": "lift + glow"
+          },
+          {
+            "icon": "Settings",
+            "title": "Zero Configuration",
+            "description": "Auto-detect your framework and build settings. Works out of the box.",
+            "animation": "fadeInScale",
+            "hoverEffect": "lift + glow"
+          },
+          {
+            "icon": "Globe",
+            "title": "Global CDN",
+            "description": "Edge network across 200+ cities. Your users get millisecond load times.",
+            "animation": "fadeInScale",
+            "hoverEffect": "lift + glow"
+          },
+          {
+            "icon": "Lock",
+            "title": "Free SSL & Domains",
+            "description": "Automatic HTTPS for all deployments. Custom domains with one click.",
+            "animation": "fadeInScale",
+            "hoverEffect": "lift + glow"
+          },
+          {
+            "icon": "GitBranch",
+            "title": "Preview Environments",
+            "description": "Every pull request gets a unique preview URL. Test before merging.",
+            "animation": "fadeInScale",
+            "hoverEffect": "lift + glow"
+          },
+          {
+            "icon": "BarChart3",
+            "title": "Real-time Analytics",
+            "description": "Monitor traffic, performance, and errors. Know what's happening instantly.",
+            "animation": "fadeInScale",
+            "hoverEffect": "lift + glow"
+          }
+        ]
+      },
+      {
+        "name": "How It Works",
+        "layout": "horizontal timeline",
+        "steps": [
+          {
+            "number": "01",
+            "icon": "GitBranch",
+            "title": "Connect Repository",
+            "description": "Link your GitHub, GitLab, or Bitbucket repo in seconds",
+            "illustration": "animated connection flow"
+          },
+          {
+            "number": "02",
+            "icon": "Settings",
+            "title": "Auto-Configure",
+            "description": "We detect your framework and optimize build settings",
+            "illustration": "scanning/detection animation"
+          },
+          {
+            "number": "03",
+            "icon": "Rocket",
+            "title": "Deploy & Share",
+            "description": "Get your live URL and share with the world",
+            "illustration": "rocket launch animation"
+          }
+        ],
+        "animation": "staggerFadeIn"
+      },
+      {
+        "name": "Social Proof",
+        "layout": "centered stats",
+        "metrics": [
+          {
+            "value": "10M+",
+            "label": "Deployments",
+            "animation": "countUp",
+            "icon": "Rocket"
+          },
+          {
+            "value": "50K+",
+            "label": "Developers",
+            "animation": "countUp",
+            "icon": "Users"
+          },
+          {
+            "value": "99.99%",
+            "label": "Uptime",
+            "animation": "countUp",
+            "icon": "Shield"
+          },
+          {
+            "value": "<30s",
+            "label": "Deploy Time",
+            "animation": "pulse",
+            "icon": "Zap"
+          }
+        ],
+        "techLogos": {
+          "items": ["React", "Next.js", "Vite", "Vue", "HTML5"],
+          "animation": "infinite scroll"
+        }
+      },
+      {
+        "name": "Pricing Teaser",
+        "layout": "3-column cards",
+        "tiers": [
+          {
+            "name": "Free",
+            "price": "$0",
+            "features": ["100 deployments/month", "Basic analytics", "Community support"],
+            "cta": "Start Free",
+            "highlighted": false
+          },
+          {
+            "name": "Pro",
+            "price": "$20",
+            "features": ["Unlimited deployments", "Advanced analytics", "Priority support", "Custom domains"],
+            "cta": "Start Pro Trial",
+            "highlighted": true,
+            "badge": "Most Popular"
+          },
+          {
+            "name": "Team",
+            "price": "$50",
+            "features": ["Everything in Pro", "Team collaboration", "SSO", "Dedicated support"],
+            "cta": "Contact Sales",
+            "highlighted": false
+          }
+        ]
+      },
+      {
+        "name": "Final CTA",
+        "layout": "centered hero variant",
+        "headline": "Ready to Deploy Faster?",
+        "subheadline": "Join 50,000+ developers shipping with Edge",
+        "cta": "Get Started Free",
+        "trustIndicators": ["No credit card required", "Free SSL included", "Cancel anytime"],
+        "background": "gradient mesh with particles"
+      }
+    ],
+    "animations": {
+      "scrollTriggers": {
+        "viewport": "once",
+        "amount": 0.3
+      },
+      "variants": {
+        "fadeInUp": {
+          "hidden": { "opacity": 0, "y": 40 },
+          "visible": { "opacity": 1, "y": 0, "transition": { "duration": 0.6, "ease": "easeOut" } }
+        },
+        "fadeInScale": {
+          "hidden": { "opacity": 0, "scale": 0.9 },
+          "visible": { "opacity": 1, "scale": 1, "transition": { "duration": 0.5 } }
+        },
+        "slideInRight": {
+          "hidden": { "opacity": 0, "x": 100 },
+          "visible": { "opacity": 1, "x": 0, "transition": { "duration": 0.8 } }
+        },
+        "stagger": {
+          "visible": { "transition": { "staggerChildren": 0.1 } }
+        }
+      },
+      "hover": {
+        "cardLift": { "scale": 1.05, "y": -8, "transition": { "duration": 0.3 } },
+        "buttonGlow": { "boxShadow": "0 0 30px rgba(14, 165, 233, 0.5)" }
+      }
+    },
+    "responsive": {
+      "breakpoints": {
+        "mobile": "0-640px",
+        "tablet": "641-1024px",
+        "desktop": "1025px+"
+      },
+      "adjustments": {
+        "mobile": ["Single column layouts", "Reduced font sizes", "Simplified animations", "Touch-optimized buttons"],
+        "tablet": ["2-column grids where applicable", "Medium spacing"],
+        "desktop": ["Full grid layouts", "Enhanced animations", "Hover effects"]
+      }
+    },
+    "performance": {
+      "lazyLoad": ["Images below fold", "Heavy animations", "Non-critical sections"],
+      "optimization": ["Image formats: WebP/AVIF", "Code splitting", "Minimal bundle size"]
+    },
+    "accessibility": {
+      "requirements": ["ARIA labels on all interactive elements", "Keyboard navigation support", "Focus indicators", "Sufficient color contrast (WCAG AA)", "Screen reader friendly"]
+    }
+  }
