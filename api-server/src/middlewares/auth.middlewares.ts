@@ -1,41 +1,36 @@
-import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 
+import { Request, Response, NextFunction } from "express";
 
-/**
- * Middleware to verify JWT access token
- * Attaches the user to the request object if token is valid
- */
-export const verifyJWT = async (
-  req: Request,
+import { JWT_SECRET } from "../config/envs";
+
+
+export interface AuthenticatedRequest extends Request {
+  user?: any;
+}
+
+export const verifyJWT = (
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
-  try {
-    // Try to get token from Authorization header first, then from cookies
-    let accessToken = req.headers.authorization?.replace("Bearer ", "");
-
-    // If not in header, try cookies
-    if (!accessToken) {
-      accessToken = req.cookies?.accessToken;
-    }
-
-    
-
-    if (!accessToken) {
-      res.status(401).json({ error: "Unauthorized - No token provided" });
-      return;
-    }
-
-    // Verify the token
-    const decoded = jwt.verify(accessToken, process.env.NEXT_AUTH_JWT_SECRET as string) as {
-      id: string;
-    };
-    
-    next();
-  } catch (error) {
-    res.status(401).json({ error: "Unauthorized", detail: error });
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
-};
+  const token = authHeader.split(" ")[1];
 
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    req.user = decoded;
+    next();
+  }
+  );
+}

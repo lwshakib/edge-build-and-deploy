@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 const ACCESS_TOKEN_COOKIE = "accessToken";
 
@@ -25,29 +25,8 @@ export const useAuth = () => {
     setIsLoaded(true);
   }, []);
 
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const scheduleCheck = () => {
-      timeoutId = window.setTimeout(() => {
-        evaluateSession();
-      }, 0);
-    };
-
-    scheduleCheck();
-    intervalId = window.setInterval(scheduleCheck, 30000);
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [evaluateSession]);
-
+ 
   return {
     isLoading,
     isLoaded,

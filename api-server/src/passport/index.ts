@@ -18,7 +18,7 @@ import {
   GOOGLE_CALLBACK_URL,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-} from "../constants";
+} from "../config/envs";
 
 
 

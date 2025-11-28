@@ -6,7 +6,9 @@ import passport, {
   PASSPORT_FAILURE_REDIRECT,
   PASSPORT_SUCCESS_REDIRECT,
 } from "./passport";
-import { SESSION_SECRET } from "./constants";
+import { SESSION_SECRET } from "./config/envs";
+import { API_PREFIX } from "./constants";
+import routes from "./routes";
 
 const app = express();
 
@@ -34,36 +36,11 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })
-);
 
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: PASSPORT_FAILURE_REDIRECT,
-    successRedirect: PASSPORT_SUCCESS_REDIRECT,
-  })
-);
 
-app.get(
-  "/auth/github",
-  passport.authenticate("github", { scope: ["read:user", "user:email"] })
-);
 
-app.get(
-  "/auth/github/callback",
-  passport.authenticate("github", {
-    failureRedirect: PASSPORT_FAILURE_REDIRECT,
-    successRedirect: PASSPORT_SUCCESS_REDIRECT,
-  })
-);
+app.use(API_PREFIX, routes);
 
-app.use("/api", verifyJWT);
 
-app.get("/api/auth/me", (req, res) => {
-  res.json({ message: "Hello World" });
-});
 
 export default app;
