@@ -21,14 +21,117 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  footerConfig,
-  layoutAnimations,
-  layoutColorPalette,
-  layoutEffects,
-  layoutTypography,
-} from "@/lib/header-footer-config";
 import { cn } from "@/lib/utils";
+
+// Footer configuration
+const footerConfig = {
+  brand: {
+    logo: "Edge",
+    icon: "Rocket",
+    tagline: "Deploy React & HTML Apps in Seconds",
+    description:
+      "Zero config, instant previews, and a global edge network built for developers.",
+  },
+  social: [
+    { platform: "GitHub", icon: "Github", href: "https://github.com" },
+    { platform: "Twitter", icon: "Twitter", href: "https://twitter.com" },
+    { platform: "Discord", icon: "MessageCircle", href: "https://discord.com" },
+    { platform: "LinkedIn", icon: "Linkedin", href: "https://linkedin.com" },
+  ],
+  columns: [
+    {
+      title: "Product",
+      links: [
+        { label: "Features", href: "#features" },
+        { label: "Pricing", href: "#pricing" },
+        { label: "Documentation", href: "/docs" },
+        { label: "API Reference", href: "/api" },
+        { label: "Changelog", href: "/changelog" },
+        { label: "Status", href: "/status" },
+      ],
+    },
+    {
+      title: "Company",
+      links: [
+        { label: "About", href: "/about" },
+        { label: "Blog", href: "/blog" },
+        { label: "Careers", href: "/careers" },
+        { label: "Contact", href: "/contact" },
+        { label: "Press Kit", href: "/press" },
+        { label: "Partners", href: "/partners" },
+      ],
+    },
+    {
+      title: "Resources",
+      links: [
+        { label: "Community", href: "/community" },
+        { label: "Support", href: "/support" },
+        { label: "Guides", href: "/guides" },
+        { label: "Templates", href: "/templates" },
+        { label: "Case Studies", href: "/case-studies" },
+      ],
+    },
+  ],
+  newsletter: {
+    show: true,
+    title: "Stay Updated",
+    description: "Get the latest updates and releases.",
+    placeholder: "you@company.dev",
+    buttonText: "Subscribe",
+    position: "column-4",
+  },
+  bottom: {
+    copyright: "© 2025 Edge. All rights reserved.",
+    legal: [
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Cookie Policy", href: "/cookies" },
+    ],
+    badges: [
+      { text: "SOC 2 Certified", show: true },
+      { text: "GDPR Compliant", show: true },
+    ],
+  },
+};
+
+const layoutColorPalette = {
+  accent: {
+    gradient: "linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)",
+  },
+};
+
+const layoutAnimations = {
+  footer: {
+    section: {
+      initial: { opacity: 0, y: 40 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.7, ease: "easeOut" },
+    },
+    stagger: {
+      children: 0.1,
+    },
+    links: {
+      hover: { x: 4, color: "#67e8f9", duration: 200 },
+    },
+    social: {
+      hover: { scale: 1.1, rotate: 5, glow: true, duration: 200 },
+    },
+  },
+};
+
+const layoutEffects = {
+  glow: "0px 0px 30px rgba(14, 165, 233, 0.4)",
+};
+
+const layoutTypography = {
+  footer: {
+    brand: "text-lg font-semibold",
+    columnTitle: "text-sm font-semibold uppercase tracking-[0.3em]",
+    links: "text-sm",
+    copyright: "text-xs",
+    legal: "text-xs",
+  },
+};
 
 const socialIcons: Record<string, ComponentType<{ className?: string }>> = {
   Github,

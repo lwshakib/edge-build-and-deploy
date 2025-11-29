@@ -19,14 +19,116 @@ import {
   SheetHeader,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  headerConfig,
-  layoutAnimations,
-  layoutColorPalette,
-  layoutSpacing,
-  layoutTypography,
-} from "@/lib/header-footer-config";
 import { cn } from "@/lib/utils";
+
+// Header configuration
+const headerConfig = {
+  logo: {
+    text: "Edge",
+    icon: "Rocket",
+    gradient: "from-cyan-300 to-blue-400",
+  },
+  navigation: [
+    { label: "Features", href: "#features" },
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Pricing", href: "#pricing" },
+    { label: "Docs", href: "#docs" },
+    { label: "Blog", href: "#blog" },
+  ],
+  actions: [
+    {
+      label: "Sign In",
+      type: "outline" as const,
+      variant: "ghost",
+      href: "/auth",
+    },
+    {
+      label: "Get Started",
+      type: "primary" as const,
+      variant: "gradient",
+      href: "/auth",
+      icon: "ArrowUpRight",
+    },
+  ],
+  status: {
+    show: true,
+    text: "All Systems Operational",
+    color: "emerald-400",
+  },
+  behavior: {
+    sticky: true,
+    scrollThreshold: 50,
+    blurOnScroll: true,
+    hideOnScrollDown: false,
+  },
+  mobile: {
+    hamburgerIcon: "Menu",
+    closeIcon: "X",
+    menuPosition: "right" as const,
+    overlay: true,
+  },
+};
+
+const layoutColorPalette = {
+  background: {
+    primary: "#050914",
+    secondary: "rgba(255, 255, 255, 0.05)",
+    card: "rgba(255, 255, 255, 0.03)",
+  },
+  accent: {
+    primary: "#06B6D4",
+    secondary: "#3B82F6",
+    gradient: "linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)",
+  },
+  text: {
+    primary: "#ffffff",
+    secondary: "#cbd5e1",
+    tertiary: "#94a3b8",
+    accent: "#67e8f9",
+  },
+  border: {
+    default: "rgba(255, 255, 255, 0.1)",
+    hover: "rgba(255, 255, 255, 0.2)",
+  },
+};
+
+const layoutAnimations = {
+  header: {
+    scroll: {
+      backgroundOpacity: { from: 0.8, to: 0.95 },
+      borderOpacity: { from: 0.1, to: 0.2 },
+      blur: { from: "12px", to: "24px" },
+      duration: 300,
+    },
+    logo: {
+      hover: { scale: 1.05, duration: 200 },
+    },
+    links: {
+      hover: { color: "#67e8f9", underline: true, duration: 200 },
+    },
+    mobileMenu: {
+      animation: "slideIn",
+      duration: 300,
+      overlay: { opacity: 0.8, blur: "12px" },
+    },
+  },
+};
+
+const layoutTypography = {
+  header: {
+    logo: "text-xl font-semibold",
+    navigation: "text-sm font-medium",
+    button: "text-sm font-semibold",
+  },
+};
+
+const layoutSpacing = {
+  header: {
+    height: "80px",
+    padding: { x: "1.5rem", y: "1rem" },
+    gap: "2rem",
+  },
+};
 
 const SolidDot = ({ className }: { className?: string }) => (
   <span
