@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { API_ENDPOINTS } from "@/lib/config";
 
 // Google Icon SVG Component
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -161,6 +162,9 @@ export function AuthForm({ defaultMode = "signin" }: AuthFormProps) {
                 variant="outline"
                 className="w-full border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30 transition-all"
                 size="lg"
+                onClick={() => {
+                  window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
+                }}
               >
                 <GoogleIcon className="size-5 mr-2" />
                 {isSignIn ? "Sign in" : "Sign up"} with Google
@@ -171,6 +175,9 @@ export function AuthForm({ defaultMode = "signin" }: AuthFormProps) {
                 variant="outline"
                 className="w-full border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30 transition-all"
                 size="lg"
+                onClick={() => {
+                  window.location.href = API_ENDPOINTS.AUTH.GITHUB;
+                }}
               >
                 <Github className="size-5 mr-2" />
                 {isSignIn ? "Sign in" : "Sign up"} with GitHub

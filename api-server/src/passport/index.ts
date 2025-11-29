@@ -1,13 +1,7 @@
-
+import { eq } from "drizzle-orm";
 import passport from "passport";
-import {
-  Strategy as GitHubStrategy,
-  Profile as GithubProfile,
-} from "passport-github2";
-import {
-  Profile as GoogleProfile,
-  Strategy as GoogleStrategy,
-} from "passport-google-oauth20";
+import { Strategy as GitHubStrategy } from "passport-github2";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
 import {
   AUTH_FAILURE_REDIRECT,
@@ -19,20 +13,21 @@ import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
 } from "../config/envs";
+import { db } from "../db";
+import { users } from "../db/schema";
 
-
-
-
-
-
-passport.serializeUser((user, done) => {
-//   done(null, user.id);
+passport.serializeUser((user: any, done) => {
+  done(null, user.id);
 });
 
 passport.deserializeUser(async (id: string, done) => {
   try {
-        // do something
-   
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    done(null, user || null);
   } catch (error) {
     done(error as Error);
   }
@@ -47,9 +42,51 @@ passport.use(
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {
+        const email = profile.emails?.[0]?.value;
+        const name = profile.displayName || profile.name?.givenName || "User";
+        const image = profile.photos?.[0]?.value || null;
 
-        // do something
-  
+        if (!email) {
+          return done(new Error("Email not provided by Google"));
+        }
+
+        // Check if user exists
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        if (existingUser) {
+          // Update existing user
+          const [updatedUser] = await db
+            .update(users)
+            .set({
+              name,
+              image,
+              provider: "GOOGLE",
+              verified: true,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, existingUser.id))
+            .returning();
+
+          return done(null, updatedUser);
+        } else {
+          // Create new user
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email,
+              name,
+              image,
+              provider: "GOOGLE",
+              verified: true,
+            })
+            .returning();
+
+          return done(null, newUser);
+        }
       } catch (error) {
         done(error as Error);
       }
@@ -63,11 +100,65 @@ passport.use(
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
       callbackURL: GITHUB_CALLBACK_URL,
-      scope: ["user:email"],
+      scope: ["user:email", "repo"],
     },
-    async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
+    async (
+      _accessToken: string,
+      _refreshToken: string,
+      profile: any,
+      done: any
+    ) => {
       try {
-     // do something
+        const email = profile.emails?.[0]?.value || profile._json?.email;
+        const name =
+          profile.displayName ||
+          profile.username ||
+          profile._json?.name ||
+          "User";
+        const image =
+          profile.photos?.[0]?.value || profile._json?.avatar_url || null;
+
+        if (!email) {
+          return done(new Error("Email not provided by GitHub"));
+        }
+
+        // Check if user exists
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        if (existingUser) {
+          // Update existing user
+          const [updatedUser] = await db
+            .update(users)
+            .set({
+              name,
+              image,
+              provider: "GITHUB",
+              verified: true,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, existingUser.id))
+            .returning();
+
+          return done(null, updatedUser);
+        } else {
+          // Create new user
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email,
+              name,
+              image,
+              provider: "GITHUB",
+              verified: true,
+            })
+            .returning();
+
+          return done(null, newUser);
+        }
       } catch (error) {
         done(error as Error);
       }
