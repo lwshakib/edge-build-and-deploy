@@ -248,21 +248,12 @@ githubRouter.get(
           const hasApps = rootContents.some(
             (item) => item.type === "dir" && item.name === "apps"
           );
-          const hasApp = rootContents.some(
-            (item) => item.type === "dir" && item.name === "app"
-          );
-          const hasSrc = rootContents.some(
-            (item) => item.type === "dir" && item.name === "src"
-          );
 
           if (hasApps) {
-            // default to apps/web for now if apps/ exists.
+            // default to apps/web for now if apps/ exists (monorepo structure).
             rootDirectory = "apps/web";
-          } else if (hasApp) {
-            rootDirectory = "app";
-          } else if (hasSrc) {
-            rootDirectory = "src";
           } else {
+            // For standard projects (including Next.js with 'app' dir), use root
             rootDirectory = "";
           }
         }

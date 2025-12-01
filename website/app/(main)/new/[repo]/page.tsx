@@ -495,14 +495,14 @@ export default function NewProjectConfigurePage() {
                     <div className="grid grid-cols-[1fr,1fr,auto] gap-3 text-sm text-muted-foreground">
                       <div>Key</div>
                       <div>Value</div>
-                      <div className="w-9"></div>
+                      <div className="w-10"></div>
                     </div>
 
                     {/* Environment variable rows */}
                     {envVars.map((envVar, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-[1fr,1fr,auto] gap-3 items-center w-full"
+                        className="grid grid-cols-[1fr,1fr,auto] gap-3 items-center"
                       >
                         <Input
                           value={envVar.key}
@@ -512,7 +512,7 @@ export default function NewProjectConfigurePage() {
                             setEnvVars(newEnvVars);
                           }}
                           placeholder="EXAMPLE_NAME"
-                          className="font-mono text-sm bg-background w-full"
+                          className="font-mono text-sm h-10"
                         />
                         <Input
                           value={envVar.value}
@@ -522,7 +522,7 @@ export default function NewProjectConfigurePage() {
                             setEnvVars(newEnvVars);
                           }}
                           placeholder="I9JU23NF394R6HH"
-                          className="font-mono text-sm bg-background w-full"
+                          className="font-mono text-sm h-10"
                         />
                         <Button
                           variant="ghost"
@@ -533,7 +533,7 @@ export default function NewProjectConfigurePage() {
                             );
                             setEnvVars(newEnvVars);
                           }}
-                          className="h-9 w-9 shrink-0"
+                          className="h-10 w-10 shrink-0"
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -554,9 +554,9 @@ export default function NewProjectConfigurePage() {
                     </Button>
 
                     {/* Import .env */}
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                       <File className="h-4 w-4" />
-                      <span>Import .env</span>
+                      <span className="font-medium">Import .env</span>
                       <span>or paste the .env contents above.</span>
                       <a
                         href="https://vercel.com/docs/projects/environment-variables"
