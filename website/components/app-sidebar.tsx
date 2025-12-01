@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Map,
   PieChart,
+  Plus,
   Rocket,
   Settings2,
 } from "lucide-react";
@@ -118,51 +119,60 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const slug = params.slug as string;
 
-  const navMain = [
-    {
-      title: "Dashboard",
-      url: `/${slug}`,
-      icon: LayoutDashboard,
-      isActive: pathname === `/${slug}`,
-    },
-    {
-      title: "Deployments",
-      url: `/${slug}/~/deployments`,
-      icon: Rocket,
-      isActive: pathname === `/${slug}/~/deployments`,
-    },
-    {
-      title: "Analytics",
-      url: `/${slug}/~/analytics`,
-      icon: PieChart,
-      isActive: pathname === `/${slug}/~/analytics`,
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      isActive: pathname.startsWith(`/${slug}/~/settings`),
-      items: [
+  const navMain = slug
+    ? [
         {
-          title: "General",
-          url: `/${slug}/~/settings`,
-          isActive: pathname === `/${slug}/~/settings`,
+          title: "Dashboard",
+          url: `/${slug}`,
+          icon: LayoutDashboard,
+          isActive: pathname === `/${slug}`,
         },
         {
-          title: "Team",
+          title: "Deployments",
+          url: `/${slug}/~/deployments`,
+          icon: Rocket,
+          isActive: pathname === `/${slug}/~/deployments`,
+        },
+        {
+          title: "Analytics",
+          url: `/${slug}/~/analytics`,
+          icon: PieChart,
+          isActive: pathname === `/${slug}/~/analytics`,
+        },
+        {
+          title: "Settings",
           url: "#",
+          icon: Settings2,
+          isActive: pathname.startsWith(`/${slug}/~/settings`),
+          items: [
+            {
+              title: "General",
+              url: `/${slug}/~/settings`,
+              isActive: pathname === `/${slug}/~/settings`,
+            },
+            {
+              title: "Team",
+              url: "#",
+            },
+            {
+              title: "Billing",
+              url: "#",
+            },
+            {
+              title: "Limits",
+              url: "#",
+            },
+          ],
         },
+      ]
+    : [
         {
-          title: "Billing",
-          url: "#",
+          title: "Get Started",
+          url: "/new",
+          icon: Plus,
+          isActive: pathname === "/new",
         },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ];
+      ];
 
   return (
     <Sidebar collapsible="icon" {...props}>
