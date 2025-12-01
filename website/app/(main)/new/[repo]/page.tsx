@@ -194,11 +194,48 @@ export default function NewProjectConfigurePage() {
     }
   };
 
-  const handleDeploy = () => {
-    // For now this is a client-side placeholder.
-    // Later this can call an API to create the project + trigger a deployment.
-    // Show a deployment status card with collapsible sections.
-    setIsDeploying(true);
+  const handleDeploy = async () => {
+    if (!owner || !repo) {
+      console.error("Missing owner or repo for deployment");
+      return;
+    }
+
+    try {
+      setIsDeploying(true);
+
+      const payload = {
+        owner,
+        repo,
+        projectName,
+        framework,
+        rootDirectory,
+        buildCommand: overrideBuildCommand ? buildCommand : undefined,
+        outputDirectory: overrideOutputDirectory ? outputDirectory : undefined,
+        installCommand: overrideInstallCommand ? installCommand : undefined,
+        envVars,
+      };
+
+      const response = await fetch("/api/github/deploy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Failed to save deployment configuration:", text);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Deployment configuration saved:", data);
+      // In the future you can use `data` to drive deployment status UI.
+    } catch (error) {
+      console.error("Error during deployment:", error);
+    }
   };
 
   return (
@@ -608,7 +645,7 @@ export default function NewProjectConfigurePage() {
               <CardContent className="space-y-4 pt-4">
                 <Button
                   className="w-full bg-linear-to-r from-cyan-500 to-blue-500 text-white"
-                  onClick={handleDeploy}
+                  onClick={() => void handleDeploy()}
                 >
                   Deploy
                 </Button>

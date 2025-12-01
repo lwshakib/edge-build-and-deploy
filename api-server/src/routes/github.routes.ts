@@ -64,6 +64,37 @@ githubRouter.get("/repos", verifyToken, async (req, res) => {
   }
 });
 
+// Save deployment configuration for a specific repository.
+// For now this simply echoes back the received payload so the frontend
+// can verify that the backend route is wired correctly.
+githubRouter.post(
+  "/repos/:owner/:repo/deploy-config",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { owner, repo } = req.params;
+      const payload = req.body;
+
+      if (!owner || !repo) {
+        return res
+          .status(400)
+          .json({ message: "Both owner and repo parameters are required" });
+      }
+
+      return res.json({
+        owner,
+        repo,
+        deploymentConfig: payload,
+      });
+    } catch (error) {
+      console.error("Error saving deployment configuration:", error);
+      return res.status(500).json({
+        message: "Error while saving deployment configuration",
+      });
+    }
+  }
+);
+
 // Get framework preset + default root directory for a specific repository
 githubRouter.get(
   "/repos/:owner/:repo/framework",

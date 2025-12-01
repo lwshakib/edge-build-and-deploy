@@ -54,7 +54,9 @@ authRouter.get(
 
 authRouter.get(
   "/github",
-  passport.authenticate("github", { scope: ["read:user", "user:email"] })
+  passport.authenticate("github", {
+    scope: ["read:user", "user:email", "repo"],
+  })
 );
 
 authRouter.get(
