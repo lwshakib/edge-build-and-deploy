@@ -61,7 +61,7 @@ authRouter.get(
   "/github/callback",
   passport.authenticate("github", {
     session: false,
-    failureRedirect: PASSPORT_FAILURE_REDIRECT,
+    failureRedirect: PASSPORT_FAILURE_REDIRECT
   }),
   (req, res) => {
     const user = req.user as any;
