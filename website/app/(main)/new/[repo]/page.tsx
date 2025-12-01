@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,8 @@ import {
   Minus,
   File,
   ExternalLink,
+  Loader2,
+  Clock,
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
 
@@ -80,6 +83,12 @@ export default function NewProjectConfigurePage() {
 
   const [isLoadingDirs, setIsLoadingDirs] = useState(false);
   const [dirError, setDirError] = useState<string | null>(null);
+
+  // Deployment state
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [isBuildLogsOpen, setIsBuildLogsOpen] = useState(true);
+  const [isDeploymentSummaryOpen, setIsDeploymentSummaryOpen] = useState(false);
+  const [isAssigningDomainsOpen, setIsAssigningDomainsOpen] = useState(false);
 
   // Default project name from repo
   const defaultProjectName =
@@ -188,8 +197,8 @@ export default function NewProjectConfigurePage() {
   const handleDeploy = () => {
     // For now this is a client-side placeholder.
     // Later this can call an API to create the project + trigger a deployment.
-    // After "deployment", route the user to a project dashboard.
-    router.push(`/${decodedRepo || "project"}`);
+    // Show a deployment status card with collapsible sections.
+    setIsDeploying(true);
   };
 
   return (
@@ -612,6 +621,104 @@ export default function NewProjectConfigurePage() {
           </div>
         </div>
       </div>
+      {/* Deployment status card */}
+      {isDeploying && (
+        <div className="mx-auto mt-2 w-full max-w-4xl">
+          <Card className="border-muted/60 bg-muted/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="text-lg">Deployment</CardTitle>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Deployment queued...</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {/* Build Logs */}
+              <Collapsible
+                open={isBuildLogsOpen}
+                onOpenChange={setIsBuildLogsOpen}
+                className="border border-border/60 rounded-md bg-background/60"
+              >
+                <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/70 rounded-md">
+                  <div className="flex items-center gap-2">
+                    {isBuildLogsOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <span>Build Logs</span>
+                  </div>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-border/60 px-3 py-3 text-xs text-muted-foreground">
+                  Build logs will appear here as your deployment progresses.
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Deployment Summary */}
+              <Collapsible
+                open={isDeploymentSummaryOpen}
+                onOpenChange={setIsDeploymentSummaryOpen}
+                className="border border-border/60 rounded-md bg-background/60"
+              >
+                <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/70 rounded-md">
+                  <div className="flex items-center gap-2">
+                    {isDeploymentSummaryOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <span>Deployment Summary</span>
+                  </div>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-border/60 px-3 py-3 text-xs text-muted-foreground">
+                  Once the deployment finishes, you&apos;ll see an overview of
+                  the build, preview URL, and any relevant metadata here.
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Assigning Custom Domains */}
+              <Collapsible
+                open={isAssigningDomainsOpen}
+                onOpenChange={setIsAssigningDomainsOpen}
+                className="border border-border/60 rounded-md bg-background/60"
+              >
+                <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/70 rounded-md">
+                  <div className="flex items-center gap-2">
+                    {isAssigningDomainsOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <span>Assigning Custom Domains</span>
+                  </div>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-border/60 px-3 py-3 text-xs text-muted-foreground">
+                  Connect your custom domains and configure DNS after your first
+                  successful deployment.
+                </CollapsibleContent>
+              </Collapsible>
+            </CardContent>
+            <CardFooter className="flex items-center justify-between border-t border-border/60 pt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setIsDeploying(false)}
+              >
+                Cancel Deployment
+              </Button>
+              <Button variant="link" className="px-0 text-xs" type="button">
+                Update package.json - 728208
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
