@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   provider: authProviderEnum("provider").default("EMAIL").notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
   image: text("image"),
   password: text("password"),
   refreshToken: text("refresh_token"),

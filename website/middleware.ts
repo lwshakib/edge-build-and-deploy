@@ -3,19 +3,37 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
+  // Check for accessToken cookie
+  const accessToken = request.cookies.get("accessToken")?.value;
+
+  // Check if user is trying to access auth routes (excluding success page)
+  const isAuthRoute =
+    pathname.startsWith("/auth") && !pathname.startsWith("/auth/success");
+
+  // If user has a token and is trying to access auth routes, redirect to home
+  // Note: Full token validation happens client-side via /api/auth/status
+  if (accessToken && isAuthRoute) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   // Public routes that don't require authentication
-  const publicRoutes = ["/", "/auth"];
-  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith("/api");
-  
+  const publicRoutes = ["/"];
+  const isPublicRoute =
+    publicRoutes.includes(pathname) ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/auth/success");
+
+  // If accessing auth routes without token, allow it
+  if (isAuthRoute) {
+    return NextResponse.next();
+  }
+
   // Check if the route is public
   if (isPublicRoute) {
     return NextResponse.next();
   }
-  
-  // Check for accessToken cookie
-  const accessToken = request.cookies.get("accessToken");
-  
+
   // If no accessToken and trying to access protected route, redirect to /auth
   if (!accessToken) {
     const authUrl = new URL("/auth", request.url);
@@ -23,8 +41,8 @@ export function middleware(request: NextRequest) {
     authUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(authUrl);
   }
-  
-  // User has accessToken, allow access
+
+  // User has accessToken, allow access (token validity checked client-side)
   return NextResponse.next();
 }
 
@@ -41,4 +59,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
-

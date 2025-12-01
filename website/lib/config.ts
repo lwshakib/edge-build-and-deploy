@@ -7,5 +7,6 @@ export const API_ENDPOINTS = {
   AUTH: {
     GOOGLE: `${API_SERVER_URL}/api/auth/google`,
     GITHUB: `${API_SERVER_URL}/api/auth/github`,
+    VERIFY: `${API_SERVER_URL}/api/auth/verify`,
   },
 };

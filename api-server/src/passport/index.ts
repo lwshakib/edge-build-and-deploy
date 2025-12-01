@@ -15,6 +15,7 @@ import {
 } from "../config/envs";
 import { db } from "../db";
 import { users } from "../db/schema";
+import slugify from "slugify";
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
@@ -40,7 +41,7 @@ passport.use(
       clientSecret: GOOGLE_CLIENT_SECRET,
       callbackURL: GOOGLE_CALLBACK_URL,
     },
-    async (_accessToken, _refreshToken, profile, done) => {
+    async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
         const name = profile.displayName || profile.name?.givenName || "User";
@@ -66,12 +67,15 @@ passport.use(
               image,
               provider: "GOOGLE",
               verified: true,
+              refreshToken: refreshToken || null,
               updatedAt: new Date(),
             })
             .where(eq(users.id, existingUser.id))
             .returning();
 
-          return done(null, updatedUser);
+          // Attach accessToken to user object for redirect
+          const userWithToken = { ...updatedUser, accessToken };
+          return done(null, userWithToken);
         } else {
           // Create new user
           const newUsers = (await db
@@ -79,15 +83,27 @@ passport.use(
             .values({
               email,
               name,
+              slug:
+                slugify(name, {
+                  lower: true,
+                  replacement: "-",
+                  remove: /[*+~.()'"!:@]/g,
+                  strict: true,
+                  locale: "en",
+                  trim: true,
+                }) + "-projects",
               image,
               provider: "GOOGLE",
               verified: true,
+              refreshToken: refreshToken || null,
             })
             .returning()) as any;
 
           const newUser = newUsers[0];
 
-          return done(null, newUser);
+          // Attach accessToken to user object for redirect
+          const userWithToken = { ...newUser, accessToken };
+          return done(null, userWithToken);
         }
       } catch (error) {
         done(error as Error);
@@ -105,8 +121,8 @@ passport.use(
       scope: ["user:email", "repo"],
     },
     async (
-      _accessToken: string,
-      _refreshToken: string,
+      accessToken: string,
+      refreshToken: string,
       profile: any,
       done: any
     ) => {
@@ -140,12 +156,15 @@ passport.use(
               image,
               provider: "GITHUB",
               verified: true,
+              refreshToken: refreshToken || null,
               updatedAt: new Date(),
             })
             .where(eq(users.id, existingUser.id))
             .returning();
 
-          return done(null, updatedUser);
+          // Attach accessToken to user object for redirect
+          const userWithToken = { ...updatedUser, accessToken };
+          return done(null, userWithToken);
         } else {
           // Create new user
           const newUsers = (await db
@@ -153,15 +172,27 @@ passport.use(
             .values({
               email,
               name,
+              slug:
+                slugify(name, {
+                  lower: true,
+                  replacement: "-",
+                  remove: /[*+~.()'"!:@]/g,
+                  strict: true,
+                  locale: "en",
+                  trim: true,
+                }) + "-projects",
               image,
               provider: "GITHUB",
               verified: true,
+              refreshToken: refreshToken || null,
             })
             .returning()) as any;
 
           const newUser = newUsers[0];
 
-          return done(null, newUser);
+          // Attach accessToken to user object for redirect
+          const userWithToken = { ...newUser, accessToken };
+          return done(null, userWithToken);
         }
       } catch (error) {
         done(error as Error);

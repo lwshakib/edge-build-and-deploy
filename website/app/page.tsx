@@ -41,6 +41,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 type FeatureCardConfig = {
   title: string;
@@ -451,6 +453,9 @@ const TechMarquee = ({ logos }: { logos: string[] }) => (
 );
 
 export default function Page() {
+  const router = useRouter();
+  const { user, isSignedIn, isLoading } = useAuth();
+
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll();
   const progressSpring = useSpring(scrollYProgress, {
@@ -472,6 +477,17 @@ export default function Page() {
     }, 1500);
     return () => clearInterval(interval);
   }, []);
+
+  // Handle CTA button clicks
+  const handleGetStarted = () => {
+    if (isLoading) return;
+    
+    if (isSignedIn && user?.slug) {
+      router.push(`/${user.slug}`);
+    } else {
+      router.push("/auth");
+    }
+  };
 
   return (
     <>
@@ -558,6 +574,7 @@ export default function Page() {
                   <Button
                     size="lg"
                     className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_20px_60px_rgba(14,165,233,0.3)]"
+                    onClick={handleGetStarted}
                   >
                     {primaryCtaLabel}
                     <ArrowUpRight className="size-4" />
@@ -566,6 +583,7 @@ export default function Page() {
                     size="lg"
                     variant="outline"
                     className="border-cyan-400/40 bg-transparent text-cyan-200 hover:bg-cyan-400/10"
+                    onClick={handleGetStarted}
                   >
                     {secondaryCtaLabel}
                   </Button>
@@ -765,6 +783,7 @@ export default function Page() {
                         ? "bg-gradient-to-r from-cyan-500 to-blue-500"
                         : "border-cyan-300/40 text-cyan-200 hover:bg-cyan-400/10"
                     )}
+                    onClick={handleGetStarted}
                   >
                     {tier.cta}
                   </Button>
@@ -888,7 +907,10 @@ export default function Page() {
                   aria-label="Email address"
                   className="bg-white/10 text-white placeholder:text-slate-500"
                 />
-                <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                <Button 
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+                  onClick={handleGetStarted}
+                >
                   Get Started
                 </Button>
               </div>

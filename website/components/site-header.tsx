@@ -20,6 +20,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 // Header configuration
 const headerConfig = {
@@ -138,6 +139,7 @@ const SolidDot = ({ className }: { className?: string }) => (
 );
 
 export function SiteHeader() {
+  const { isSignedIn } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeHref, setActiveHref] = useState(
     headerConfig.navigation[0]?.href ?? "#"
@@ -153,6 +155,18 @@ export function SiteHeader() {
   const primaryAction = useMemo(
     () => headerConfig.actions.find((action) => action.type === "primary"),
     []
+  );
+  
+  // Filter out sign in button if user is signed in
+  const visibleActions = useMemo(
+    () => headerConfig.actions.filter((action) => {
+      // Hide "Sign In" button if user is signed in
+      if (isSignedIn && action.label === "Sign In") {
+        return false;
+      }
+      return true;
+    }),
+    [isSignedIn]
   );
 
   const { scrollY } = useScroll();
@@ -383,7 +397,7 @@ export function SiteHeader() {
                 />
                 Press ⌘K
               </div>
-              {headerConfig.actions.map(renderActionButton)}
+              {visibleActions.map(renderActionButton)}
               <Button
                 asChild
                 variant="outline"
@@ -470,7 +484,7 @@ export function SiteHeader() {
                     })}
                   </div>
                   <div className="mt-8 flex flex-col gap-3">
-                    {headerConfig.actions.map((action) => (
+                    {visibleActions.map((action) => (
                       <Button
                         key={action.label}
                         asChild
