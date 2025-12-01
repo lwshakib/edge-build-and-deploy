@@ -11,20 +11,18 @@ import { SESSION_SECRET } from "./config/envs";
 import { API_PREFIX } from "./constants";
 import routes from "./routes";
 import { createServer, Server } from "http";
+import SocketService from "./services/socket";
+import { errorHandler } from "./middlewares/error.middleware";
+import morganMiddleware from "./logger/morgan.logger";
 const app = express();
 
 const httpServer = createServer(app);
+const socketService = new SocketService();
 
-const io = new SocketIOServer(httpServer, {
-  pingTimeout: 60000,
-  cors: {
-    origin: "*",
-    credentials: true,
-  },
-});
+socketService.initListeners();
 
-
-app.set("io", io); // using set method to mount the `io` instance on the app to avoid usage of `global`
+socketService.io.attach(httpServer);
+socketService.initListeners();
 
 app.use(
   cors({
@@ -50,11 +48,13 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-
+app.use(morganMiddleware);
 
 
 app.use(API_PREFIX, routes);
 
 
+app.use(errorHandler);
 
-export default app;
+
+export default httpServer;
