@@ -3,7 +3,7 @@ version: "3.9"
 services:
   postgres:
     image: postgres:17.1-alpine
-    container_name: postgres
+    container_name: edge_postgres
     restart: always
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
@@ -25,3 +25,4 @@ services:
 volumes:
   postgres_data:
   clickhouse_data:
+

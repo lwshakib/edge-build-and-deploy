@@ -74,7 +74,7 @@ passport.use(
           return done(null, updatedUser);
         } else {
           // Create new user
-          const [newUser] = await db
+          const newUsers = (await db
             .insert(users)
             .values({
               email,
@@ -83,7 +83,9 @@ passport.use(
               provider: "GOOGLE",
               verified: true,
             })
-            .returning();
+            .returning()) as any;
+
+          const newUser = newUsers[0];
 
           return done(null, newUser);
         }
@@ -146,7 +148,7 @@ passport.use(
           return done(null, updatedUser);
         } else {
           // Create new user
-          const [newUser] = await db
+          const newUsers = (await db
             .insert(users)
             .values({
               email,
@@ -155,7 +157,9 @@ passport.use(
               provider: "GITHUB",
               verified: true,
             })
-            .returning();
+            .returning()) as any;
+
+          const newUser = newUsers[0];
 
           return done(null, newUser);
         }

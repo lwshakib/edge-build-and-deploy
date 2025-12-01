@@ -14,9 +14,6 @@ export const authProviderEnum = pgEnum("auth_provider", [
   "EMAIL",
   "GOOGLE",
   "GITHUB",
-  "FACEBOOK",
-  "TWITTER",
-  "LINKEDIN",
 ]);
 
 export const deploymentStatusEnum = pgEnum("deployment_status", [
@@ -81,3 +78,14 @@ export const deploymentsRelations = relations(deployments, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+export const connectedAccounts = pgTable("connected_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  provider: authProviderEnum("provider").default("EMAIL").notNull(),
+  providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
