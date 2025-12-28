@@ -13,3 +13,5 @@ export const REDIS_USERNAME = process.env.REDIS_USERNAME!;
 export const REDIS_PASSWORD = process.env.REDIS_PASSWORD!;
 export const REDIS_HOST = process.env.REDIS_HOST!;
 export const REDIS_PORT = process.env.REDIS_PORT!;
+export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID!;
+export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!;
