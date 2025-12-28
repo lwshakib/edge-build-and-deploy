@@ -20,6 +20,7 @@ import SocketService from "./services/socket.services";
 
 const app = express();
 
+app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -32,7 +33,6 @@ app.use(
 
 app.use(helmet());
 
-app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.get("/", (req, res) => {
   res.send("API is running");
