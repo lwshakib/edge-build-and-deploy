@@ -1,9 +1,9 @@
-import { exec, ExecException } from "child_process";
+import { exec, type ExecException } from "child_process";
 import path from "path";
 import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import mime from "mime-types";
-import { Kafka, Producer } from "kafkajs";
+import { Kafka, type Producer } from "kafkajs";
 import { ReadStream } from "fs";
 
 /**
@@ -13,7 +13,9 @@ const PROJECT_ID: string | undefined = process.env.PROJECT_ID;
 const DEPLOYMENT_ID: string | undefined = process.env.DEPLOYMENT_ID;
 
 if (!PROJECT_ID || !DEPLOYMENT_ID) {
-  throw new Error("Missing required environment variables: PROJECT_ID or DEPLOYMENT_ID");
+  throw new Error(
+    "Missing required environment variables: PROJECT_ID or DEPLOYMENT_ID"
+  );
 }
 
 /**
