@@ -1,7 +1,7 @@
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: postgres
+    image: postgres:17-alpine
+    container_name: postgres_edge
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: redis_edge
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -36,7 +36,7 @@ services:
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
-    container_name: clickhouse
+    container_name: clickhouse_edge
     restart: unless-stopped
     ports:
       - "8123:8123" # HTTP interface
@@ -61,7 +61,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
+    container_name: zookeeper_edge
     restart: unless-stopped
     ports:
       - "2181:2181"
@@ -71,7 +71,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka
+    container_name: kafka_edge
     restart: unless-stopped
     ports:
       - "9092:9092"
@@ -99,7 +99,7 @@ services:
 
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: mailhog
+    container_name: mailhog_edge
     restart: unless-stopped
     ports:
       - "1025:1025" # SMTP server
