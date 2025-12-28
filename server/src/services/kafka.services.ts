@@ -2,6 +2,9 @@ import { Kafka, type Producer, type Consumer } from "kafkajs";
 
 import { prisma } from "./prisma.services";
 import { KAFKA_BROKER } from "../env";
+import { insertLog } from "./clickhouse.services";
+import { pub } from "./redis.services";
+import { v4 as uuidv4 } from "uuid";
 
 const kafka = new Kafka({
   clientId: "frequency-chat-app",
@@ -31,6 +34,7 @@ const kafka = new Kafka({
 let producer: Producer | null = null;
 let consumer: Consumer | null = null;
 let presenceConsumer: Consumer | null = null;
+let logConsumer: Consumer | null = null;
 
 // Create topics if they don't exist
 export async function createTopics() {
@@ -40,7 +44,7 @@ export async function createTopics() {
     console.log("Kafka admin connected");
 
     const topics = await admin.listTopics();
-    const requiredTopics = ["MESSAGES", "USER_PRESENCE"];
+    const requiredTopics = ["MESSAGES", "USER_PRESENCE", "container-logs"];
     const topicsToCreate = requiredTopics.filter(
       (topic) => !topics.includes(topic)
     );
@@ -145,9 +149,6 @@ export async function startMessageConsumer() {
           const messageData = JSON.parse(message.value.toString()).message;
           console.log("Processing message:", messageData);
 
-
-
-
           console.log("Message processed successfully");
         } catch (err) {
           console.error("Error processing message:", err);
@@ -222,7 +223,6 @@ export async function startPresenceConsumer() {
           const presence = JSON.parse(message.value.toString());
           const { userId, isOnline, lastOnlineAt } = presence || {};
           if (!userId) return;
-
         } catch (err) {
           console.error("Error processing presence:", err);
           console.log(
@@ -242,6 +242,62 @@ export async function startPresenceConsumer() {
     );
   } catch (error) {
     console.error("Failed to start presence consumer:", error);
+    throw error;
+  }
+}
+
+export async function startLogConsumer() {
+  console.log("Starting Kafka log consumer...");
+
+  logConsumer = kafka.consumer({
+    groupId: "api-server-logs-consumer",
+    sessionTimeout: 30000,
+    heartbeatInterval: 3000,
+    maxWaitTimeInMs: 5000,
+  });
+
+  try {
+    await logConsumer.connect();
+    console.log("Log consumer connected successfully");
+
+    await logConsumer.subscribe({
+      topic: "container-logs",
+      fromBeginning: true,
+    });
+    console.log("Log consumer subscribed to container-logs topic");
+
+    await logConsumer.run({
+      autoCommit: true,
+      eachMessage: async ({ message, heartbeat }) => {
+        try {
+          await heartbeat();
+
+          if (!message.value) return;
+
+          const stringMessage = message.value.toString();
+          const { PROJECT_ID, DEPLOYMENT_ID, log } = JSON.parse(stringMessage);
+
+          console.log(`Recv log for ${DEPLOYMENT_ID}: ${log}`);
+
+          // Save to ClickHouse
+          await insertLog({
+            event_id: uuidv4(),
+            deployment_id: DEPLOYMENT_ID,
+            log,
+          });
+
+          // Publish to Redis for Socket.io
+          await pub.publish(
+            "LOGS",
+            JSON.stringify({ deploymentId: DEPLOYMENT_ID, log })
+          );
+        } catch (err) {
+          console.error("Error processing log message:", err);
+        }
+      },
+    });
+  } catch (error) {
+    console.error("Failed to start log consumer:", error);
     throw error;
   }
 }
@@ -272,16 +328,12 @@ export async function stopProducer() {
 
 export async function gracefulShutdown() {
   console.log("Gracefully shutting down Kafka services...");
-  await Promise.all([stopMessageConsumer(), stopProducer()]);
-  if (presenceConsumer) {
-    try {
-      console.log("Stopping Kafka presence consumer...");
-      await presenceConsumer.disconnect();
-      console.log("Kafka presence consumer stopped successfully");
-    } catch (error) {
-      console.error("Error stopping Kafka presence consumer:", error);
-    }
-  }
+  await Promise.all([
+    stopMessageConsumer(),
+    stopProducer(),
+    presenceConsumer?.disconnect(),
+    logConsumer?.disconnect(),
+  ]);
 }
 
 export default kafka;

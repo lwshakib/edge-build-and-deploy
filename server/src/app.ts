@@ -14,8 +14,10 @@ import {
   gracefulShutdown,
   startMessageConsumer,
   startPresenceConsumer,
+  startLogConsumer,
   createTopics,
 } from "./services/kafka.services";
+import { createLogTable } from "./services/clickhouse.services";
 import SocketService from "./services/socket.services";
 
 const app = express();
@@ -56,6 +58,10 @@ async function initializeKafka() {
     // Then start consumers
     await startMessageConsumer();
     await startPresenceConsumer();
+    await startLogConsumer();
+
+    // Initialize ClickHouse table
+    await createLogTable();
 
     console.log("Kafka initialization completed successfully");
   } catch (error) {

@@ -13,7 +13,9 @@ import {
   Edit2,
   Lock,
   Globe,
+  Terminal,
 } from "lucide-react";
+import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +56,42 @@ function ImportProjectContent() {
     { key: string; value: string }[]
   >([{ key: "", value: "" }]);
   const [isDeploying, setIsDeploying] = React.useState(false);
+  const [logs, setLogs] = React.useState<string[]>([]);
+  const [deploymentId, setDeploymentId] = React.useState<string | null>(null);
+  const socketRef = React.useRef<Socket | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll logs
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  // Handle Socket Connection
+  React.useEffect(() => {
+    if (isDeploying && deploymentId) {
+      const socket = io(SERVER_URL, {
+        withCredentials: true,
+        transports: ["websocket"],
+      });
+
+      socket.on("connect", () => {
+        console.log("Connected to logs server");
+        socket.emit("subscribe:logs", deploymentId);
+      });
+
+      socket.on("log", (log: string) => {
+        setLogs((prev) => [...prev, log]);
+      });
+
+      socketRef.current = socket;
+
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [isDeploying, deploymentId]);
 
   const handleDeploy = async () => {
     if (!projectName) {
@@ -82,7 +120,9 @@ function ImportProjectContent() {
       });
 
       if (res.ok) {
+        const data = await res.json();
         toast.success("Project created successfully!");
+        setDeploymentId(data.deployment.id);
         // We could redirect or show progress
       } else {
         const data = await res.json();
@@ -396,19 +436,52 @@ function ImportProjectContent() {
                   here...
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-400">
-                      Queueing deployment...
-                    </span>
-                    <span className="text-zinc-500">0%</span>
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Deployment in progress...</span>
+                    </div>
                   </div>
+
+                  {/* Logs Terminal */}
+                  <div className="bg-black/80 rounded-lg border border-zinc-800 font-mono text-xs overflow-hidden flex flex-col h-[400px]">
+                    <div className="bg-zinc-900 px-4 py-2 border-b border-zinc-800 flex items-center gap-2">
+                      <Terminal className="h-3 w-3 text-zinc-500" />
+                      <span className="text-zinc-400 uppercase tracking-widest text-[10px]">
+                        Build Output
+                      </span>
+                    </div>
+                    <div
+                      ref={scrollRef}
+                      className="p-4 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-zinc-800"
+                    >
+                      {logs.length === 0 ? (
+                        <div className="text-zinc-600 italic">
+                          Waiting for logs...
+                        </div>
+                      ) : (
+                        logs.map((log, i) => (
+                          <div
+                            key={i}
+                            className="text-zinc-300 break-words leading-relaxed"
+                          >
+                            <span className="text-zinc-600 mr-2">
+                              [{i + 1}]
+                            </span>
+                            {log}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
                   <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-white"
                       initial={{ width: 0 }}
-                      animate={{ width: "30%" }}
-                      transition={{ duration: 2 }}
+                      animate={{ width: deploymentId ? "100%" : "30%" }}
+                      transition={{ duration: 10 }}
                     />
                   </div>
                 </div>

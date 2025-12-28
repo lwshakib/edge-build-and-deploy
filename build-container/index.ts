@@ -24,8 +24,8 @@ if (!PROJECT_ID || !DEPLOYMENT_ID) {
 const s3Client = new S3Client({
   region: "ap-south-1",
   credentials: {
-    accessKeyId: "YOUR_AWS_ACCESS_KEY_ID",
-    secretAccessKey: "YOUR_AWS_SECRET_ACCESS_KEY",
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
 
@@ -34,20 +34,25 @@ const s3Client = new S3Client({
  */
 const kafka = new Kafka({
   clientId: `docker-build-server-${DEPLOYMENT_ID}`,
-  brokers: ["YOUR_KAFKA_BROKER_URL"],
-  ssl: {
-    ca: [
-      fs.readFileSync(
-        path.join(__dirname, process.env.KAFKA_CA_FILE ?? "kafka.pem"),
-        "utf-8"
-      ),
-    ],
-  },
-  sasl: {
-    username: "YOUR_KAFKA_USERNAME",
-    password: "YOUR_KAFKA_PASSWORD",
-    mechanism: "plain",
-  },
+  brokers: [process.env.KAFKA_BROKER!],
+  ssl: process.env.KAFKA_CA_FILE
+    ? {
+        ca: [
+          fs.readFileSync(
+            path.join(__dirname, process.env.KAFKA_CA_FILE),
+            "utf-8"
+          ),
+        ],
+      }
+    : undefined,
+  sasl:
+    process.env.KAFKA_USERNAME && process.env.KAFKA_PASSWORD
+      ? {
+          username: process.env.KAFKA_USERNAME,
+          password: process.env.KAFKA_PASSWORD,
+          mechanism: "plain",
+        }
+      : undefined,
 });
 
 const producer: Producer = kafka.producer();

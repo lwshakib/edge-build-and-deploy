@@ -1,23 +1,8 @@
-import Redis from "ioredis";
 import { Server, Socket } from "socket.io";
 import { produceMessage, produceUserPresence } from "./kafka.services";
-import { REDIS_HOST, REDIS_PORT, REDIS_USERNAME, REDIS_PASSWORD } from "../env";
 import { auth } from "./auth.services";
 import { fromNodeHeaders } from "better-auth/node";
-
-const pub = new Redis({
-  host: REDIS_HOST,
-  port: parseInt(REDIS_PORT, 10),
-  username: REDIS_USERNAME,
-  password: REDIS_PASSWORD,
-});
-
-const sub = new Redis({
-  host: REDIS_HOST,
-  port: parseInt(REDIS_PORT, 10),
-  username: REDIS_USERNAME,
-  password: REDIS_PASSWORD,
-});
+import { pub, sub } from "./redis.services";
 
 class SocketService {
   private _io: Server;
@@ -48,6 +33,7 @@ class SocketService {
     });
 
     sub.subscribe("MESSAGES");
+    sub.subscribe("LOGS");
   }
 
   initListeners() {
@@ -88,6 +74,11 @@ class SocketService {
       socket.on("join:server", (userId: string) => {
         console.log("User joined server in socket: ", userId);
         socket.join(userId);
+      });
+
+      socket.on("subscribe:logs", (deploymentId: string) => {
+        console.log("User joined logs room: ", deploymentId);
+        socket.join(deploymentId);
       });
 
       socket.on("delete:conversation", (payload: any) => {
@@ -213,6 +204,10 @@ class SocketService {
           });
         }
         await produceMessage(JSON.stringify({ message: data2.message }));
+      } else if (channel === "LOGS") {
+        const { deploymentId, log } = JSON.parse(data);
+        console.log("Broadcasting log to room:", deploymentId);
+        io.to(deploymentId).emit("log", log);
       }
     });
   }

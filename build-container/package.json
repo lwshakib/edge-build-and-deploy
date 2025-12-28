@@ -5,7 +5,8 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/mime-types": "^3.0.1"
+    "@types/mime-types": "^3.0.1",
+    "esbuild": "^0.27.2"
   },
   "peerDependencies": {
     "typescript": "^5"

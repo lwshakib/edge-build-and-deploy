@@ -1,23 +1,22 @@
-FROM ubuntu:focal
+FROM oven/bun:1.1-slim
 
-RUN apt-get update
-RUN apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get upgrade -y
-RUN apt-get install -y nodejs
-
-RUN apt-get install git -y
+RUN apt-get update && apt-get install -y git
 
 WORKDIR /home/app
 
-COPY main.sh main.sh
-COPY script.js script.js
-COPY package*.json .
-COPY kafka.pem kafka.pem 
+# Copy package files first for better caching
+COPY package.json bun.lock* ./
+RUN bun install
 
-RUN npm install
+# Copy source and other files
+COPY index.ts index.ts
+COPY main.sh main.sh
+COPY kafka.pem kafka.pem
+COPY tsconfig.json tsconfig.json
+
+# Build TypeScript to JavaScript
+RUN bun build ./index.ts --outfile ./index.js --target bun
 
 RUN chmod +x main.sh
-RUN chmod +x script.js
 
 ENTRYPOINT [ "/home/app/main.sh" ]
