@@ -145,21 +145,8 @@ export async function startMessageConsumer() {
           const messageData = JSON.parse(message.value.toString()).message;
           console.log("Processing message:", messageData);
 
-          const newMessage = await prisma.message.create({
-            data: {
-              content: messageData.content,
-              conversationId: messageData.conversationId,
-              isRead: messageData.isRead,
-              senderId: messageData.senderId,
-              files: messageData.files,
-              type: messageData.type,
-            },
-          });
 
-          await prisma.conversation.update({
-            where: { id: newMessage.conversationId },
-            data: { lastMessageId: newMessage.id },
-          });
+
 
           console.log("Message processed successfully");
         } catch (err) {
@@ -236,13 +223,6 @@ export async function startPresenceConsumer() {
           const { userId, isOnline, lastOnlineAt } = presence || {};
           if (!userId) return;
 
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              isOnline: Boolean(isOnline),
-              lastOnlineAt: lastOnlineAt ? new Date(lastOnlineAt) : new Date(),
-            },
-          });
         } catch (err) {
           console.error("Error processing presence:", err);
           console.log(
