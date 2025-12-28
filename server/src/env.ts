@@ -15,3 +15,4 @@ export const REDIS_HOST = process.env.REDIS_HOST!;
 export const REDIS_PORT = process.env.REDIS_PORT!;
 export const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID!;
 export const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!;
+export const CLICK_HOUSE_DB_URL = process.env.CLICK_HOUSE_DB_URL!;
