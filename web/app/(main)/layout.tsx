@@ -3,7 +3,7 @@
 import AnimatedHeader from "@/components/animated-header";
 import { useEdgeStore } from "@/context";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function MainLayout({
@@ -18,14 +18,15 @@ export default function MainLayout({
   useEffect(() => {
     if (session) {
       setSession(session);
-    } else if (!isPending && !session) {
-      // Redirect only if not pending and no session
-      router.push("/sign-in");
     }
-  }, [session, setSession, isPending, router]);
+  }, [session, setSession]);
 
   if (isPending) {
     return null;
+  }
+
+  if (!session) {
+    redirect("/sign-in");
   }
 
   return (

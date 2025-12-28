@@ -15,6 +15,7 @@ export const requireAuth = asyncHandler(
     });
 
     if (!session) {
+      console.log("No session found in requireAuth. Headers:", req.headers);
       throw new ApiError(401, "Unauthorized");
     }
 

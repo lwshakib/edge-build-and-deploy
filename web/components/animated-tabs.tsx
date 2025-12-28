@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { AnimatePresence, motion, Transition } from "motion/react";
 
@@ -80,11 +81,7 @@ const Tabs = ({
                 "text-black dark:text-white font-semibold": isActive,
               })}
             >
-              <span
-                className={item.value === "danger-zone" ? "text-red-500" : ""}
-              >
-                {item.label}
-              </span>
+              <span>{item.label}</span>
             </motion.span>
           </Link>
         );
@@ -94,12 +91,7 @@ const Tabs = ({
         {hoveredRect && navRect && (
           <motion.div
             key="hover"
-            className={`absolute z-10 top-0 left-0 rounded-md ${
-              hoveredTabIndex ===
-              tabs.findIndex(({ value }) => value === "danger-zone")
-                ? "bg-red-100 dark:bg-red-500/30"
-                : "bg-zinc-100 dark:bg-zinc-800"
-            }`}
+            className="absolute z-10 top-0 left-0 rounded-md bg-zinc-100 dark:bg-zinc-800"
             initial={{
               ...getHoverAnimationProps(hoveredRect, navRect),
               opacity: 0,
@@ -120,12 +112,7 @@ const Tabs = ({
       <AnimatePresence>
         {selectedRect && navRect && (
           <motion.div
-            className={`absolute z-10 bottom-0 left-0 h-[2px] ${
-              selectedTabIndex ===
-              tabs.findIndex(({ value }) => value === "danger-zone")
-                ? "bg-red-500"
-                : "bg-black dark:bg-white"
-            }`}
+            className="absolute z-10 bottom-0 left-0 h-[2px] bg-black dark:bg-white"
             initial={false}
             animate={{
               width: selectedRect.width + 18,
@@ -141,9 +128,11 @@ const Tabs = ({
 };
 
 export function AnimatedTabs({ tabs }: AnimatedTabsProps) {
+  const pathname = usePathname();
+
   const [hookProps] = React.useState(() => {
     const initialTabId =
-      tabs.find((tab) => tab.value === "home")?.value || tabs[0].value;
+      tabs.find((tab) => tab.href === pathname)?.value || tabs[0].value;
 
     return {
       tabs: tabs.map(({ label, value, subRoutes, href }) => ({
@@ -157,6 +146,22 @@ export function AnimatedTabs({ tabs }: AnimatedTabsProps) {
   });
 
   const framer = useTabs(hookProps);
+
+  React.useEffect(() => {
+    const index = tabs.findIndex((tab) => tab.href === pathname);
+    if (index !== -1 && index !== framer.tabProps.selectedTabIndex) {
+      framer.tabProps.setSelectedTab([
+        index,
+        index > framer.tabProps.selectedTabIndex ? 1 : -1,
+      ]);
+    }
+  }, [
+    pathname,
+    tabs,
+    framer.tabProps.selectedTabIndex,
+    framer.tabProps.setSelectedTab,
+    framer.tabProps,
+  ]);
 
   return (
     <div className="relative flex w-full items-start justify-start overflow-x-auto overflow-y-hidden">
