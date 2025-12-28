@@ -24,6 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+const SERVER_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4000";
 import {
   Accordion,
   AccordionContent,
@@ -42,11 +45,73 @@ function ImportProjectContent() {
   const [owner, repoName] = repo.split("/");
 
   const [projectName, setProjectName] = React.useState(repoName || "");
+  const [framework, setFramework] = React.useState("other");
+  const [rootDirectory, setRootDirectory] = React.useState("./");
+  const [buildCommand, setBuildCommand] = React.useState("");
+  const [outputDirectory, setOutputDirectory] = React.useState("");
+  const [installCommand, setInstallCommand] = React.useState("");
+  const [envVariables, setEnvVariables] = React.useState<
+    { key: string; value: string }[]
+  >([{ key: "", value: "" }]);
   const [isDeploying, setIsDeploying] = React.useState(false);
 
-  const handleDeploy = () => {
+  const handleDeploy = async () => {
+    if (!projectName) {
+      toast.error("Project name is required");
+      return;
+    }
+
     setIsDeploying(true);
-    // Simulate deployment process
+    try {
+      const res = await fetch(`${SERVER_URL}/api/project/new`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          name: projectName,
+          framework,
+          rootDirectory,
+          buildCommand: buildCommand || null,
+          outputDirectory: outputDirectory || null,
+          installCommand: installCommand || null,
+          repoName: repo,
+          envVariables: envVariables.filter((ev) => ev.key && ev.value),
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Project created successfully!");
+        // We could redirect or show progress
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Failed to create project");
+        setIsDeploying(false);
+      }
+    } catch (error) {
+      console.error("Error deploying project:", error);
+      toast.error("An error occurred during deployment");
+      setIsDeploying(false);
+    }
+  };
+
+  const addEnvVar = () => {
+    setEnvVariables([...envVariables, { key: "", value: "" }]);
+  };
+
+  const updateEnvVar = (
+    index: number,
+    field: "key" | "value",
+    value: string
+  ) => {
+    const newVars = [...envVariables];
+    newVars[index][field] = value;
+    setEnvVariables(newVars);
+  };
+
+  const removeEnvVar = (index: number) => {
+    setEnvVariables(envVariables.filter((_, i) => i !== index));
   };
 
   return (
@@ -143,11 +208,11 @@ function ImportProjectContent() {
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 Framework Preset
               </Label>
-              <Select defaultValue="other">
+              <Select value={framework} onValueChange={setFramework}>
                 <SelectTrigger className="bg-black/50 border-zinc-800 h-10">
                   <div className="flex items-center gap-2">
                     <Settings className="h-4 w-4 text-zinc-500" />
-                    <span>Other</span>
+                    <SelectValue placeholder="Select Framework" />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
@@ -201,31 +266,40 @@ function ImportProjectContent() {
                         <Label className="text-sm font-medium">
                           Build Command
                         </Label>
-                        <p className="text-xs text-zinc-500">
-                          `npm run build` or `npm run vercel-build`
-                        </p>
+                        <Input
+                          placeholder="npm run build"
+                          value={buildCommand}
+                          onChange={(e) => setBuildCommand(e.target.value)}
+                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1"
+                        />
                       </div>
                       <Switch />
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 w-full mr-4">
                         <Label className="text-sm font-medium">
                           Output Directory
                         </Label>
-                        <p className="text-xs text-zinc-500">
-                          `public` if it exists, or `.`
-                        </p>
+                        <Input
+                          placeholder="public"
+                          value={outputDirectory}
+                          onChange={(e) => setOutputDirectory(e.target.value)}
+                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1"
+                        />
                       </div>
                       <Switch />
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 w-full mr-4">
                         <Label className="text-sm font-medium">
                           Install Command
                         </Label>
-                        <p className="text-xs text-zinc-500">
-                          `npm install`, `yarn install`, or `bun install`
-                        </p>
+                        <Input
+                          placeholder="npm install"
+                          value={installCommand}
+                          onChange={(e) => setInstallCommand(e.target.value)}
+                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1"
+                        />
                       </div>
                       <Switch />
                     </div>
@@ -244,32 +318,45 @@ function ImportProjectContent() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 py-6 space-y-6">
-                  <div className="flex items-end gap-2">
-                    <div className="grid flex-1 items-start gap-2">
-                      <Label className="text-xs text-zinc-500">Key</Label>
-                      <Input
-                        placeholder="EXAMPLE_NAME"
-                        className="bg-black/50 border-zinc-800 h-9"
-                      />
+                  {envVariables.map((ev, index) => (
+                    <div key={index} className="flex items-end gap-2">
+                      <div className="grid flex-1 items-start gap-2">
+                        <Label className="text-xs text-zinc-500">Key</Label>
+                        <Input
+                          placeholder="EXAMPLE_NAME"
+                          value={ev.key}
+                          onChange={(e) =>
+                            updateEnvVar(index, "key", e.target.value)
+                          }
+                          className="bg-black/50 border-zinc-800 h-9"
+                        />
+                      </div>
+                      <div className="grid flex-1 items-start gap-2">
+                        <Label className="text-xs text-zinc-500">Value</Label>
+                        <Input
+                          placeholder="EXAMPLE_VALUE"
+                          value={ev.value}
+                          onChange={(e) =>
+                            updateEnvVar(index, "value", e.target.value)
+                          }
+                          className="bg-black/50 border-zinc-800 h-9"
+                        />
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => removeEnvVar(index)}
+                        className="h-9 w-9 border-zinc-800 bg-black/50 text-zinc-500"
+                        disabled={envVariables.length === 1}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="grid flex-1 items-start gap-2">
-                      <Label className="text-xs text-zinc-500">Value</Label>
-                      <Input
-                        placeholder="EXAMPLE_VALUE"
-                        className="bg-black/50 border-zinc-800 h-9"
-                      />
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-9 w-9 border-zinc-800 bg-black/50 text-zinc-500"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ))}
                   <div className="flex flex-col gap-4">
                     <Button
                       variant="outline"
+                      onClick={addEnvVar}
                       className="w-full border-dashed border-zinc-800 bg-transparent text-zinc-500 hover:text-white hover:bg-zinc-900 h-10 gap-2"
                     >
                       <Plus className="h-4 w-4" />

@@ -18,8 +18,10 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@aws-sdk/client-ecs": "^3.958.0",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "@types/uuid": "^11.0.0",
     "axios": "^1.13.2",
     "better-auth": "^1.4.9",
     "cors": "^2.8.5",
@@ -29,8 +31,11 @@
     "kafkajs": "^2.2.4",
     "morgan": "^1.10.1",
     "nodemailer": "^7.0.12",
+    "octokit": "^5.0.5",
     "pg": "^8.16.3",
+    "random-word-slugs": "^0.1.7",
     "socket.io": "^4.8.3",
+    "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "zod": "^4.2.1"
   },

@@ -23,6 +23,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  projects      Project[]
 
   @@unique([email])
   @@map("user")
@@ -74,4 +75,49 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Project {
+  id              String   @id
+  name            String
+  framework       String   @default("other")
+  rootDirectory   String   @default("./")
+  buildCommand    String?
+  outputDirectory String?
+  installCommand  String?
+  repoName        String
+  subDomain       String   @unique
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  envVariables EnvironmentVariable[]
+  deployments  Deployment[]
+
+  @@unique([userId, name])
+  @@map("project")
+}
+
+model EnvironmentVariable {
+  id        String   @id
+  key       String
+  value     String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("environment_variable")
+}
+
+model Deployment {
+  id          String   @id
+  status      String   @default("PENDING") // PENDING, BUILDING, READY, ERROR
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("deployment")
 }

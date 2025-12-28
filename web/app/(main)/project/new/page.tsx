@@ -57,11 +57,21 @@ export default function NewProjectPage() {
   const [loading, setLoading] = React.useState(true);
   const [loadingRepos, setLoadingRepos] = React.useState(false);
 
-  const isGitHubConnected = accounts.some((a) => a.providerId === "github");
+  const isGitHubConnected = accounts.some(
+    (a) => a.providerId === "github" || a.providerId === "github-app"
+  );
 
   React.useEffect(() => {
     fetchAccounts();
   }, []);
+
+  React.useEffect(() => {
+    console.log("Current accounts linked:", accounts);
+    console.log(
+      "GitHub App Connected:",
+      accounts.some((a) => a.providerId === "github-app")
+    );
+  }, [accounts]);
 
   React.useEffect(() => {
     if (isGitHubConnected) {
@@ -111,15 +121,9 @@ export default function NewProjectPage() {
   };
 
   const handleLinkGitHub = async () => {
-    try {
-      await authClient.signIn.social({
-        provider: "github",
-        callbackURL: window.location.href,
-      });
-    } catch (error) {
-      console.error("Error linking GitHub:", error);
-      toast.error("Failed to connect GitHub account");
-    }
+    // Correct GitHub App slug provided by the user
+    const GITHUB_APP_SLUG = "edge-build-deploy";
+    window.location.href = `https://github.com/apps/${GITHUB_APP_SLUG}/installations/new`;
   };
 
   if (loading) {

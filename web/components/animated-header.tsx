@@ -19,7 +19,7 @@ export default function AnimatedHeader() {
   const { data: session } = authClient.useSession();
   const [scrollY, setScrollY] = React.useState(0);
 
-  const isNewProjectPage = pathname === "/project/new";
+  const isNewProjectPage = pathname.startsWith("/project/new");
 
   React.useEffect(() => {
     const handleScroll = () => {
