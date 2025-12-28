@@ -7,27 +7,28 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2 } from "lucide-react";
 
-export default function SignUp() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const showVerifyMessage = searchParams.get("verify") === "true";
 
-  const handleSignUp = async () => {
-    if (!firstName || !lastName || !email || !password) {
+  const handleSignIn = async () => {
+    if (!email || !password) {
       toast.error("Please fill in all fields");
       return;
     }
     setLoading(true);
-    await authClient.signUp.email(
+    await authClient.signIn.email(
       {
         email,
         password,
-        name: `${firstName} ${lastName}`,
         callbackURL:
           process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000/",
       },
@@ -36,8 +37,9 @@ export default function SignUp() {
           setLoading(true);
         },
         onSuccess: () => {
+          toast.success("Signed in successfully");
+          router.push("/");
           setLoading(false);
-          router.push("/sign-in?verify=true");
         },
         onError: (ctx) => {
           toast.error(ctx.error.message);
@@ -63,41 +65,23 @@ export default function SignUp() {
               <LogoIcon />
             </Link>
             <h1 className="mb-1 mt-4 text-xl font-semibold">
-              Create a Frequency Account
+              Sign In to Frequency
             </h1>
-            <p className="text-sm">Welcome! Create an account to get started</p>
+            <p className="text-sm">Welcome back! Sign in to continue</p>
           </div>
 
-          <div className="mt-6 space-y-6">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="firstname" className="block text-sm">
-                  Firstname
-                </Label>
-                <Input
-                  type="text"
-                  required
-                  name="firstname"
-                  id="firstname"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastname" className="block text-sm">
-                  Lastname
-                </Label>
-                <Input
-                  type="text"
-                  required
-                  name="lastname"
-                  id="lastname"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-            </div>
+          {showVerifyMessage && (
+            <Alert className="mt-4 border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle>Account created</AlertTitle>
+              <AlertDescription>
+                We've sent a verification link to your email address. Please
+                verify your account to sign in.
+              </AlertDescription>
+            </Alert>
+          )}
 
+          <div className="mt-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
                 Email
@@ -117,6 +101,14 @@ export default function SignUp() {
                 <Label htmlFor="pwd" className="text-sm">
                   Password
                 </Label>
+                <Button asChild variant="link" size="sm">
+                  <Link
+                    href="/forgot-password"
+                    className="link intent-info variant-ghost text-sm"
+                  >
+                    Forgot your Password ?
+                  </Link>
+                </Button>
               </div>
               <Input
                 type="password"
@@ -131,10 +123,10 @@ export default function SignUp() {
 
             <Button
               className="w-full"
-              onClick={handleSignUp}
+              onClick={handleSignIn}
               disabled={loading}
             >
-              {loading ? "Creating Account..." : "Sign Up"}
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
           </div>
 
@@ -183,9 +175,9 @@ export default function SignUp() {
 
         <div className="p-3">
           <p className="text-accent-foreground text-center text-sm">
-            Have an account ?
+            Don't have an account ?
             <Button asChild variant="link" className="px-2">
-              <Link href="/sign-in">Sign In</Link>
+              <Link href="/sign-up">Create account</Link>
             </Button>
           </p>
         </div>
