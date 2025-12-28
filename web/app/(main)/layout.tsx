@@ -1,5 +1,6 @@
 "use client";
 
+import AnimatedHeader from "@/components/animated-header";
 import { useEdgeStore } from "@/context";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
@@ -24,8 +25,13 @@ export default function MainLayout({
   }, [session, setSession, isPending, router]);
 
   if (isPending) {
-    return null; // Or a loading spinner
+    return null;
   }
 
-  return <div>{children}</div>;
+  return (
+    <div className="w-full min-h-screen">
+      <AnimatedHeader />
+      {children}
+    </div>
+  );
 }
