@@ -32,12 +32,14 @@ app.use(async (req: Request, res: Response) => {
   }
 
   // Sort by creation time to get the latest
-  const latestDeployment = deployments
+  const sortedDeployments = deployments
     .map((d) => ({
       name: d,
       time: fs.statSync(path.join(projectPath, d)).mtime.getTime(),
     }))
-    .sort((a, b) => b.time - a.time)[0].name;
+    .sort((a, b) => b.time - a.time);
+
+  const latestDeployment = sortedDeployments[0]!.name;
 
   const filePath = req.path === "/" ? "index.html" : req.path;
   const localFile = path.join(projectPath, latestDeployment, filePath);
