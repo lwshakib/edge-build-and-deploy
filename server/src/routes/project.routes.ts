@@ -12,6 +12,7 @@ import {
   ECS_TASK_DEFINITION_ARN,
   ECS_SUBNET_IDS,
   ECS_SECURITY_GROUP_IDS,
+  AWS_ENDPOINT,
   KAFKA_BROKER,
   KAFKA_USERNAME,
   KAFKA_PASSWORD,
@@ -26,6 +27,7 @@ const ecsClient = new ECSClient({
     accessKeyId: AWS_ACCESS_KEY_ID,
     secretAccessKey: AWS_SECRET_ACCESS_KEY,
   },
+  endpoint: AWS_ENDPOINT,
 });
 
 router.use(requireAuth);

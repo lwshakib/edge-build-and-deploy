@@ -6,8 +6,11 @@ import { IncomingMessage, ServerResponse, ClientRequest } from "http";
 const app = express();
 const PORT = 8000 as const;
 
-const BASE_PATH =
-  "https://s3.ap-south-1.amazonaws.com/vercel.vexx.fun/__outputs" as const;
+const BASE_PATH = process.env.S3_BASE_URL;
+
+if (!BASE_PATH) {
+  throw new Error("Missing S3_BASE_URL environment variable");
+}
 
 // http-proxy does not provide perfect generics for Express,
 // but createProxyServer is the typed entry point

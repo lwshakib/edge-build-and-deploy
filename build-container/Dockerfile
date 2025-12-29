@@ -11,7 +11,6 @@ RUN bun install
 # Copy source and other files
 COPY index.ts index.ts
 COPY main.sh main.sh
-COPY kafka.pem kafka.pem
 COPY tsconfig.json tsconfig.json
 
 # Build TypeScript to JavaScript

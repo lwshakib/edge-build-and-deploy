@@ -12,9 +12,11 @@ import { ReadStream } from "fs";
 const PROJECT_ID: string | undefined = process.env.PROJECT_ID;
 const DEPLOYMENT_ID: string | undefined = process.env.DEPLOYMENT_ID;
 
-if (!PROJECT_ID || !DEPLOYMENT_ID) {
+const S3_BUCKET_NAME: string | undefined = process.env.S3_BUCKET_NAME;
+
+if (!PROJECT_ID || !DEPLOYMENT_ID || !S3_BUCKET_NAME) {
   throw new Error(
-    "Missing required environment variables: PROJECT_ID or DEPLOYMENT_ID"
+    "Missing required environment variables: PROJECT_ID, DEPLOYMENT_ID, or S3_BUCKET_NAME"
   );
 }
 
@@ -24,9 +26,11 @@ if (!PROJECT_ID || !DEPLOYMENT_ID) {
 const s3Client = new S3Client({
   region: "ap-south-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "test",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "test",
   },
+  endpoint: process.env.AWS_ENDPOINT,
+  forcePathStyle: true,
 });
 
 /**
@@ -99,14 +103,14 @@ async function getAllFiles(dirPath: string): Promise<string[]> {
 async function init(): Promise<void> {
   await producer.connect();
 
-  console.log("Executing script.js");
+  console.log("Executing main script");
   await publishLog("Build Started...");
 
   const outDirPath = path.join(__dirname, "output");
   const distFolderPath = path.join(outDirPath, "dist");
 
   const processHandle = exec(
-    `cd ${outDirPath} && rm -rf node_modules package-lock.json && npm install && npm run build`
+    `cd ${outDirPath} && rm -rf node_modules bun.lockb && bun install && bun run build`
   );
 
   processHandle.stdout?.on("data", (data: Buffer | string) => {
@@ -152,7 +156,7 @@ async function init(): Promise<void> {
         const body: ReadStream = fs.createReadStream(filePath);
 
         const command = new PutObjectCommand({
-          Bucket: "vercel.vexx.fun",
+          Bucket: S3_BUCKET_NAME,
           Key: `__outputs/${PROJECT_ID}/${relativeFile}`,
           Body: body,
           ContentType: mime.lookup(filePath) || "application/octet-stream",
