@@ -2,9 +2,9 @@ import express from "express";
 import { prisma } from "../services/prisma.services";
 import { requireAuth } from "../middlewares/auth.middlewares";
 import crypto from "node:crypto";
-import { generateSlug } from "random-word-slugs";
-import { KAFKA_BROKER } from "../env";
 import { exec } from "node:child_process";
+import { generateUniqueSlug, slugify } from "../utils/slug";
+import { KAFKA_BROKER } from "../env";
 
 const router = express.Router();
 
@@ -55,6 +55,18 @@ router.post("/new", async (req, res) => {
   }
 
   try {
+    const subDomain = slugify(name);
+
+    const existingProject = await prisma.project.findUnique({
+      where: { subDomain },
+    });
+
+    if (existingProject) {
+      return res
+        .status(400)
+        .json({ message: "Project name already taken. Please choose a unique name." });
+    }
+
     const project = await prisma.project.create({
       data: {
         id: crypto.randomUUID(),
@@ -65,7 +77,7 @@ router.post("/new", async (req, res) => {
         outputDirectory,
         installCommand,
         repoName,
-        subDomain: generateSlug(),
+        subDomain,
         userId: user.id,
         envVariables: {
           create: (envVariables || []).map(
@@ -98,6 +110,7 @@ router.post("/new", async (req, res) => {
     const envVars = [
       `GIT_REPOSITORY__URL=https://github.com/${project.repoName}`,
       `PROJECT_ID=${project.id}`,
+      `PROJECT_SLUG=${project.subDomain}`,
       `DEPLOYMENT_ID=${deployment.id}`,
       `FRAMEWORK=${project.framework}`,
       `BUILD_COMMAND=${project.buildCommand || ""}`,

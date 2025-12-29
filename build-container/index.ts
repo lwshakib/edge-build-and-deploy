@@ -8,16 +8,22 @@ import { ReadStream } from "fs";
  * Environment variables
  */
 const PROJECT_ID: string | undefined = process.env.PROJECT_ID;
+const PROJECT_SLUG: string | undefined = process.env.PROJECT_SLUG;
 const DEPLOYMENT_ID: string | undefined = process.env.DEPLOYMENT_ID;
 
-if (!PROJECT_ID || !DEPLOYMENT_ID) {
+if (!PROJECT_ID || !DEPLOYMENT_ID || !PROJECT_SLUG) {
   throw new Error(
-    "Missing required environment variables: PROJECT_ID or DEPLOYMENT_ID"
+    "Missing required environment variables: PROJECT_ID, PROJECT_SLUG or DEPLOYMENT_ID"
   );
 }
 
 const VALID_PROJECT_ID: string = PROJECT_ID!;
+const VALID_PROJECT_SLUG: string = PROJECT_SLUG!;
 const VALID_DEPLOYMENT_ID: string = DEPLOYMENT_ID!;
+
+const BUILD_COMMAND = process.env.BUILD_COMMAND || "bun run build";
+const INSTALL_COMMAND = process.env.INSTALL_COMMAND || "bun install";
+const OUTPUT_DIRECTORY = process.env.OUTPUT_DIRECTORY || "dist";
 
 // No S3 Client needed for local storage
 const BUCKET_PATH = path.join(__dirname, "bucket");
@@ -84,10 +90,10 @@ async function init(): Promise<void> {
   await publishLog("Build Started...");
 
   const outDirPath = path.join(__dirname, "output");
-  const distFolderPath = path.join(outDirPath, "dist");
+  const distFolderPath = path.join(outDirPath, OUTPUT_DIRECTORY);
 
   const processHandle = exec(
-    `cd ${outDirPath} && rm -rf node_modules bun.lockb && bun install && bun run build`
+    `cd ${outDirPath} && rm -rf node_modules bun.lockb && ${INSTALL_COMMAND} && ${BUILD_COMMAND}`
   );
 
   processHandle.stdout?.on("data", (data: Buffer | string) => {
@@ -133,7 +139,7 @@ async function init(): Promise<void> {
         const destinationPath = path.join(
           BUCKET_PATH,
           "__outputs",
-          VALID_PROJECT_ID,
+          VALID_PROJECT_SLUG,
           VALID_DEPLOYMENT_ID,
           relativeFile
         );

@@ -121,4 +121,62 @@ router.get("/accounts", async (req, res) => {
   res.json(accounts);
 });
 
+router.get("/framework", async (req, res) => {
+  const { owner, repo } = req.query;
+  // @ts-ignore
+  const user = req.user;
+
+  if (!owner || !repo) {
+    return res.status(400).json({ message: "Owner and repo are required" });
+  }
+
+  try {
+    // Find the installation that has access to this repo
+    const installations = await prisma.account.findMany({
+      where: { userId: user.id, providerId: "github-app" },
+    });
+
+    for (const inst of installations) {
+      try {
+        const octokit = await app.getInstallationOctokit(
+          Number(inst.accountId)
+        );
+
+        // Try to get package.json
+        const { data }: any = await octokit.request(
+          "GET /repos/{owner}/{repo}/contents/{path}",
+          {
+            owner: String(owner),
+            repo: String(repo),
+            path: "package.json",
+          }
+        );
+
+        if (data && data.content) {
+          const content = Buffer.from(data.content, "base64").toString();
+          const pkg = JSON.parse(content);
+          const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+          let framework = "other";
+          if (deps.next) framework = "nextjs";
+          else if (deps.vite) framework = "vite";
+          else if (deps["@angular/core"]) framework = "angular";
+          else if (deps.nuxt) framework = "nuxt";
+          else if (deps.svelte) framework = "svelte";
+
+          return res.json({ framework });
+        }
+      } catch (e) {
+        // Continue to next installation if this one fails
+        continue;
+      }
+    }
+
+    res.json({ framework: "other" });
+  } catch (error) {
+    console.error("Error detecting framework:", error);
+    res.status(500).json({ message: "Failed to detect framework" });
+  }
+});
+
 export default router;

@@ -14,6 +14,11 @@ import {
   Lock,
   Globe,
   Terminal,
+  Loader2,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
@@ -60,11 +65,54 @@ function ImportProjectContent() {
   const [overrideOutput, setOverrideOutput] = React.useState(false);
   const [overrideInstall, setOverrideInstall] = React.useState(false);
 
+  // Framework defaults
+  React.useEffect(() => {
+    if (framework === "vite") {
+      setBuildCommand("vite build");
+      setOutputDirectory("dist");
+      setInstallCommand("");
+    } else if (framework === "nextjs") {
+      setBuildCommand("next build");
+      setOutputDirectory(".next");
+      setInstallCommand("");
+    } else if (framework === "angular") {
+      setBuildCommand("ng build");
+      setOutputDirectory("dist");
+      setInstallCommand("");
+    } else if (framework === "nuxt") {
+      setBuildCommand("nuxt build");
+      setOutputDirectory(".output/public");
+      setInstallCommand("");
+    } else if (framework === "svelte") {
+      setBuildCommand("npm run build");
+      setOutputDirectory("build");
+      setInstallCommand("");
+    }
+  }, [framework]);
+
   const [isDeploying, setIsDeploying] = React.useState(false);
+  const [projectNameError, setProjectNameError] = React.useState<string | null>(
+    null
+  );
+  const [status, setStatus] = React.useState<
+    "queue" | "building" | "deploying" | "ready" | "error"
+  >("queue");
   const [logs, setLogs] = React.useState<string[]>([]);
   const [deploymentId, setDeploymentId] = React.useState<string | null>(null);
+  const [projectId, setProjectId] = React.useState<string | null>(null);
+  const [startTime, setStartTime] = React.useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = React.useState(0);
   const socketRef = React.useRef<Socket | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Timer for elapsed time
+  React.useEffect(() => {
+    if (!startTime || status === "ready" || status === "error") return;
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status, startTime]);
 
   // Auto-scroll logs
   React.useEffect(() => {
@@ -72,6 +120,32 @@ function ImportProjectContent() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs]);
+
+  // Detect Framework
+  React.useEffect(() => {
+    const detectFramework = async () => {
+      if (!owner || !repoName) return;
+      try {
+        const res = await fetch(
+          `${SERVER_URL}/api/github/framework?owner=${owner}&repo=${repoName}`,
+          {
+            credentials: "include",
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.framework && data.framework !== "other") {
+            setFramework(data.framework);
+            toast.info(`Detected ${data.framework} framework`);
+          }
+        }
+      } catch (error) {
+        console.error("Error detecting framework:", error);
+      }
+    };
+
+    detectFramework();
+  }, [owner, repoName]);
 
   // Handle Socket Connection
   React.useEffect(() => {
@@ -87,7 +161,26 @@ function ImportProjectContent() {
       });
 
       socket.on("log", (log: string) => {
-        setLogs((prev) => [...prev, log]);
+        let message = log;
+        try {
+          const parsed = JSON.parse(log);
+          if (parsed.log) message = parsed.log;
+        } catch (e) { }
+
+        setLogs((prev) => [...prev, message]);
+
+        if (message.includes("Build Started")) {
+          setStatus("building");
+        }
+        if (message.includes("Starting to upload")) {
+          setStatus("deploying");
+        }
+        if (message.includes("Done")) {
+          setStatus("ready");
+        }
+        if (message.includes("ERROR") || message.includes("failed")) {
+          setStatus("error");
+        }
       });
 
       socketRef.current = socket;
@@ -98,11 +191,23 @@ function ImportProjectContent() {
     }
   }, [isDeploying, deploymentId]);
 
+  // Redirect on success
+  React.useEffect(() => {
+    if (status === "ready" && deploymentId && projectId) {
+      router.push(
+        `/project/new/success?deploymentId=${deploymentId}&projectId=${projectId}`
+      );
+    }
+  }, [status, deploymentId, projectId, router]);
+
   const handleDeploy = async () => {
     if (!projectName) {
+      setProjectNameError("Project name is required");
       toast.error("Project name is required");
       return;
     }
+
+    setProjectNameError(null);
 
     setIsDeploying(true);
     try {
@@ -116,9 +221,9 @@ function ImportProjectContent() {
           name: projectName,
           framework,
           rootDirectory,
-          buildCommand: buildCommand || null,
-          outputDirectory: outputDirectory || null,
-          installCommand: installCommand || null,
+          buildCommand: overrideBuild ? buildCommand : null,
+          outputDirectory: overrideOutput ? outputDirectory : null,
+          installCommand: overrideInstall ? installCommand : null,
           repoName: repo,
           envVariables: envVariables.filter((ev) => ev.key && ev.value),
         }),
@@ -126,13 +231,15 @@ function ImportProjectContent() {
 
       if (res.ok) {
         const data = await res.json();
-        toast.success("Project created successfully!");
-        // Redirect to success page to watch logs
-        router.push(
-          `/project/new/success?deploymentId=${data.deployment.id}&projectId=${data.project.id}`
-        );
+        setDeploymentId(data.deployment.id);
+        setProjectId(data.project.id);
+        setStartTime(Date.now());
+        toast.success("Deployment started!");
       } else {
         const data = await res.json();
+        if (data.message?.toLowerCase().includes("already exists")) {
+          setProjectNameError(data.message);
+        }
         toast.error(data.message || "Failed to create project");
         setIsDeploying(false);
       }
@@ -245,9 +352,26 @@ function ImportProjectContent() {
                 <Input
                   id="project-name"
                   value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  className="bg-black/50 border-zinc-800 h-10"
+                  onChange={(e) => {
+                    setProjectName(e.target.value);
+                    if (projectNameError) setProjectNameError(null);
+                  }}
+                  className={`bg-black/50 border-zinc-800 h-10 ${projectNameError ? "border-red-500 focus-visible:ring-red-500" : ""
+                    }`}
                 />
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="text-[11px] text-zinc-500">Your URL:</span>
+                  <span className="text-[11px] text-zinc-400 font-mono">
+                    {projectName
+                      ? `${projectName.toLowerCase().replace(/\s+/g, "-")}.localhost:8000`
+                      : "project-slug.localhost:8000"}
+                  </span>
+                </div>
+                {projectNameError && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {projectNameError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -265,25 +389,27 @@ function ImportProjectContent() {
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                   <SelectItem value="nextjs">Next.js</SelectItem>
                   <SelectItem value="vite">Vite</SelectItem>
+                  <SelectItem value="angular">Angular</SelectItem>
+                  <SelectItem value="nuxt">Nuxt.js</SelectItem>
+                  <SelectItem value="svelte">Svelte</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <Label className="text-[13px] font-medium text-zinc-400">
                 Root Directory
               </Label>
-              <div className="relative">
+              <div className="flex gap-2">
                 <Input
                   value="./"
                   readOnly
-                  className="bg-black/50 border-zinc-800 h-10 pr-20"
+                  className="bg-[#0A0A0A] border-zinc-800 h-11 flex-1 text-sm"
                 />
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1 h-8 px-3 text-xs bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700"
+                  variant="outline"
+                  className="bg-[#0A0A0A] border-zinc-800 hover:bg-zinc-900 text-white h-11 px-6 font-medium"
                 >
                   Edit
                 </Button>
@@ -300,67 +426,93 @@ function ImportProjectContent() {
                 value="build-settings"
                 className="border border-zinc-800 rounded-lg bg-black/20 overflow-hidden"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-zinc-800/30">
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <Settings className="h-4 w-4 text-zinc-500" />
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-zinc-800/30 [&>svg]:hidden [&[data-state=open]>div>svg]:rotate-180">
+                  <div className="flex items-center gap-2 font-medium text-sm text-zinc-300">
+                    <ChevronDown className="h-4 w-4 text-zinc-500 transition-transform duration-200" />
                     Build and Output Settings
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 py-6 space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5 w-full mr-4">
-                        <Label className="text-sm font-medium">
+                  <div className="space-y-6">
+                    {/* Build Command */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Label className="text-[13px] font-medium text-zinc-400">
                           Build Command
                         </Label>
+                        <Info className="h-3.5 w-3.5 text-zinc-500" />
+                      </div>
+                      <div
+                        className={`flex items-center gap-2 bg-[#0A0A0A] border border-zinc-800 rounded-md px-3 py-1.5 transition-all ${!overrideBuild ? "opacity-50" : "ring-1 ring-zinc-700"
+                          }`}
+                      >
                         <Input
                           placeholder="npm run build"
                           value={buildCommand}
                           onChange={(e) => setBuildCommand(e.target.value)}
                           disabled={!overrideBuild}
-                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1 disabled:opacity-50"
+                          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 h-7 text-sm p-0 flex-1 font-mono"
+                        />
+                        <Switch
+                          checked={overrideBuild}
+                          onCheckedChange={setOverrideBuild}
+                          className="data-[state=checked]:bg-blue-600 scale-90"
                         />
                       </div>
-                      <Switch
-                        checked={overrideBuild}
-                        onCheckedChange={setOverrideBuild}
-                      />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5 w-full mr-4">
-                        <Label className="text-sm font-medium">
+
+                    {/* Output Directory */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Label className="text-[13px] font-medium text-zinc-400">
                           Output Directory
                         </Label>
+                        <Info className="h-3.5 w-3.5 text-zinc-500" />
+                      </div>
+                      <div
+                        className={`flex items-center gap-2 bg-[#0A0A0A] border border-zinc-800 rounded-md px-3 py-1.5 transition-all ${!overrideOutput ? "opacity-50" : "ring-1 ring-zinc-700"
+                          }`}
+                      >
                         <Input
-                          placeholder="public"
+                          placeholder="dist"
                           value={outputDirectory}
                           onChange={(e) => setOutputDirectory(e.target.value)}
                           disabled={!overrideOutput}
-                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1 disabled:opacity-50"
+                          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 h-7 text-sm p-0 flex-1 font-mono"
+                        />
+                        <Switch
+                          checked={overrideOutput}
+                          onCheckedChange={setOverrideOutput}
+                          className="data-[state=checked]:bg-blue-600 scale-90"
                         />
                       </div>
-                      <Switch
-                        checked={overrideOutput}
-                        onCheckedChange={setOverrideOutput}
-                      />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5 w-full mr-4">
-                        <Label className="text-sm font-medium">
+
+                    {/* Install Command */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Label className="text-[13px] font-medium text-zinc-400">
                           Install Command
                         </Label>
+                        <Info className="h-3.5 w-3.5 text-zinc-500" />
+                      </div>
+                      <div
+                        className={`flex items-center gap-2 bg-[#0A0A0A] border border-zinc-800 rounded-md px-3 py-1.5 transition-all ${!overrideInstall ? "opacity-50" : "ring-1 ring-zinc-700"
+                          }`}
+                      >
                         <Input
-                          placeholder="npm install"
+                          placeholder="`yarn install`, `pnpm install`, `npm install`, or `bun install`"
                           value={installCommand}
                           onChange={(e) => setInstallCommand(e.target.value)}
                           disabled={!overrideInstall}
-                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1 disabled:opacity-50"
+                          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 h-7 text-sm p-0 flex-1 font-mono"
+                        />
+                        <Switch
+                          checked={overrideInstall}
+                          onCheckedChange={setOverrideInstall}
+                          className="data-[state=checked]:bg-blue-600 scale-90"
                         />
                       </div>
-                      <Switch
-                        checked={overrideInstall}
-                        onCheckedChange={setOverrideInstall}
-                      />
                     </div>
                   </div>
                 </AccordionContent>
@@ -370,9 +522,9 @@ function ImportProjectContent() {
                 value="env-variables"
                 className="border border-zinc-800 rounded-lg bg-black/20 overflow-hidden"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-zinc-800/30">
-                  <div className="flex items-center gap-2 font-medium text-sm">
-                    <Lock className="h-4 w-4 text-zinc-500" />
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-zinc-800/30 [&>svg]:hidden [&[data-state=open]>div>svg]:rotate-180">
+                  <div className="flex items-center gap-2 font-medium text-sm text-zinc-300">
+                    <ChevronDown className="h-4 w-4 text-zinc-500 transition-transform duration-200" />
                     Environment Variables
                   </div>
                 </AccordionTrigger>
@@ -447,147 +599,172 @@ function ImportProjectContent() {
         {/* Deployment Section */}
         <div className="space-y-6">
           <h2 className="text-xl font-bold tracking-tight">Deployment</h2>
-          <Card className="bg-zinc-900/40 border-zinc-800 min-h-100 flex flex-col relative overflow-hidden group">
-            <CardContent className="p-8 relative z-10">
+          <Card className="bg-[#0A0A0A] border-zinc-800 min-h-100 flex flex-col relative overflow-hidden group rounded-xl">
+            <CardContent className="p-0 relative z-10">
               {!isDeploying ? (
-                <p className="text-zinc-500 text-sm">
-                  Once you&apos;re ready, start deploying to see the progress
-                  here...
-                </p>
+                <div className="p-8">
+                  <p className="text-zinc-500 text-sm">
+                    Once you&apos;re ready, start deploying to see the progress
+                    here...
+                  </p>
+                </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-emerald-400">
-                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Deployment in progress...</span>
-                    </div>
+                <div className="flex flex-col">
+                  <div className="p-6 border-b border-zinc-800 flex items-center gap-3 text-zinc-400">
+                    <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+                    <span className="text-[15px]">
+                      {status === "queue"
+                        ? "Deployment queued..."
+                        : `Deployment started ${elapsedTime}s ago...`}
+                    </span>
                   </div>
 
-                  {/* Logs Terminal */}
-                  <div className="bg-black/80 rounded-lg border border-zinc-800 font-mono text-xs overflow-hidden flex flex-col h-[400px]">
-                    <div className="bg-zinc-900 px-4 py-2 border-b border-zinc-800 flex items-center gap-2">
-                      <Terminal className="h-3 w-3 text-zinc-500" />
-                      <span className="text-zinc-400 uppercase tracking-widest text-[10px]">
-                        Build Output
-                      </span>
-                    </div>
-                    <div
-                      ref={scrollRef}
-                      className="p-4 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-zinc-800"
+                  <Accordion
+                    type="single"
+                    collapsible
+                    defaultValue="build"
+                    className="w-full"
+                  >
+                    {/* Build Logs Step */}
+                    <AccordionItem
+                      value="build"
+                      className="border-b border-zinc-800"
                     >
-                      {logs.length === 0 ? (
-                        <div className="text-zinc-600 italic">
-                          Waiting for logs...
-                        </div>
-                      ) : (
-                        logs.map((log, i) => (
-                          <div
-                            key={i}
-                            className="text-zinc-300 break-words leading-relaxed"
-                          >
-                            <span className="text-zinc-600 mr-2">
-                              [{i + 1}]
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-zinc-800/20 [&>svg]:hidden">
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-4">
+                            <ChevronRight className="h-4 w-4 text-zinc-500 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                            <span className="font-medium text-zinc-300">
+                              Build Logs
                             </span>
-                            {log}
+                            {status === "building" && (
+                              <span className="text-sm text-zinc-500 ml-2">
+                                Installing dependencies ...
+                              </span>
+                            )}
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
+                          <div className="flex items-center gap-3">
+                            {status === "building" && (
+                              <span className="text-sm text-zinc-500">
+                                {elapsedTime}s
+                              </span>
+                            )}
+                            {status === "building" ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+                            ) : status === "queue" ? (
+                              <Clock className="h-4 w-4 text-zinc-600" />
+                            ) : status === "error" ? (
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            )}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="bg-black border-t border-zinc-800">
+                        <div className="p-4 bg-[#050505]">
+                          <div className="flex items-center justify-between mb-4 px-2">
+                            <div className="flex items-center gap-2 text-zinc-500 text-xs">
+                              <Terminal className="h-3.5 w-3.5" />
+                              <span>{logs.length} lines</span>
+                            </div>
+                            <div className="relative">
+                              <Input
+                                placeholder="Find in logs"
+                                className="h-8 w-64 bg-zinc-900/50 border-zinc-800 text-xs pl-8"
+                              />
+                              <Terminal className="h-3 w-3 absolute left-2.5 top-2.5 text-zinc-600" />
+                            </div>
+                          </div>
+                          <div
+                            ref={scrollRef}
+                            className="h-[300px] overflow-y-auto font-mono text-[11px] space-y-1 px-2 scrollbar-thin scrollbar-thumb-zinc-800"
+                          >
+                            {logs.length === 0 ? (
+                              <div className="text-zinc-700 italic">
+                                Waiting for logs...
+                              </div>
+                            ) : (
+                              logs.map((log, i) => (
+                                <div
+                                  key={i}
+                                  className="text-zinc-400 flex gap-4"
+                                >
+                                  <span className="text-zinc-700 select-none min-w-[80px]">
+                                    {new Date().toLocaleTimeString([], {
+                                      hour12: false,
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      second: "2-digit",
+                                    })}
+                                  </span>
+                                  <span className="break-words">{log}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                  <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-white"
-                      initial={{ width: 0 }}
-                      animate={{ width: deploymentId ? "100%" : "30%" }}
-                      transition={{ duration: 10 }}
-                    />
-                  </div>
+                    {/* Deployment Summary */}
+                    <AccordionItem
+                      value="summary"
+                      className="border-b border-zinc-800"
+                    >
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-zinc-800/20 [&>svg]:hidden">
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-4">
+                            <ChevronRight className="h-4 w-4 text-zinc-500" />
+                            <span className="font-medium text-zinc-300">
+                              Deployment Summary
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {status === "deploying" ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+                            ) : status === "error" ? (
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-zinc-600" />
+                            )}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="p-6 text-zinc-500 text-sm">
+                        Finalizing the build and preparing the deployment for
+                        production.
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Custom Domains */}
+                    <AccordionItem value="domains" className="border-none">
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-zinc-800/20 [&>svg]:hidden">
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-4">
+                            <ChevronRight className="h-4 w-4 text-zinc-500" />
+                            <span className="font-medium text-zinc-300">
+                              Assigning Custom Domains
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {status === "error" ? (
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-zinc-600" />
+                            )}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="p-6 text-zinc-500 text-sm">
+                        Assigning the unique subdomain and configuring the
+                        routing.
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
               )}
             </CardContent>
-
-            {/* Globe Wireframe Visualization */}
-            <div className="absolute inset-0 flex items-end justify-center pointer-events-none opacity-20 group-hover:opacity-30 transition-opacity">
-              <div className="w-full h-75 relative overflow-hidden">
-                <svg
-                  viewBox="0 0 800 400"
-                  className="w-full h-full text-zinc-500 translate-y-20"
-                >
-                  {/* Longitude lines */}
-                  <ellipse
-                    cx="400"
-                    cy="400"
-                    rx="400"
-                    ry="300"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <ellipse
-                    cx="400"
-                    cy="400"
-                    rx="300"
-                    ry="300"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <ellipse
-                    cx="400"
-                    cy="400"
-                    rx="200"
-                    ry="300"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <ellipse
-                    cx="400"
-                    cy="400"
-                    rx="100"
-                    ry="300"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <line
-                    x1="400"
-                    y1="100"
-                    x2="400"
-                    y2="400"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-
-                  {/* Latitude lines */}
-                  <path
-                    d="M0 400 C300 100 500 100 800 400"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M40 350 C300 150 500 150 760 350"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M100 300 C300 200 500 200 700 300"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M200 250 C300 230 500 230 600 250"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                  />
-                </svg>
-              </div>
-            </div>
           </Card>
         </div>
       </div>
