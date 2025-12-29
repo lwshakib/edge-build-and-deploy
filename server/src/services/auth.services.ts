@@ -1,7 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "../services/prisma.services";
-import { WEB_URL } from "../env";
+import {
+  WEB_URL,
+  GITHUB_AUTH_CLIENT_ID,
+  GITHUB_AUTH_CLIENT_SECRET,
+} from "../env";
 import { sendEmail } from "./email.services";
 import { SendMailEnum } from "../constants";
 
@@ -45,8 +49,9 @@ export const auth = betterAuth({
     },
     github: {
       enabled: true,
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      clientId: process.env.GITHUB_AUTH_CLIENT_ID as string,
+      clientSecret: process.env.GITHUB_AUTH_CLIENT_SECRET as string,
+      scope: ["user:email"],
     },
   },
   account: {

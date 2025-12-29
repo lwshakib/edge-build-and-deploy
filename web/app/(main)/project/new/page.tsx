@@ -57,9 +57,7 @@ export default function NewProjectPage() {
   const [loading, setLoading] = React.useState(true);
   const [loadingRepos, setLoadingRepos] = React.useState(false);
 
-  const isGitHubConnected = accounts.some(
-    (a) => a.providerId === "github" || a.providerId === "github-app"
-  );
+  const isGitHubConnected = accounts.some((a) => a.providerId === "github-app");
 
   React.useEffect(() => {
     fetchAccounts();
@@ -187,18 +185,18 @@ export default function NewProjectPage() {
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-semibold text-lg">
-                      Connect GitHub Account
+                      Install GitHub App
                     </h3>
                     <p className="text-sm text-zinc-500 max-w-75">
-                      Connect your GitHub account to import your repositories
-                      and start deploying.
+                      Install our GitHub App to allow access to your
+                      repositories for deployment.
                     </p>
                   </div>
                   <Button
                     onClick={handleLinkGitHub}
                     className="mt-2 bg-foreground text-background hover:bg-foreground/90 font-medium px-8"
                   >
-                    Connect to GitHub
+                    Install GitHub App
                   </Button>
                 </CardContent>
               </Card>

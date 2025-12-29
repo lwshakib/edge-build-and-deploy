@@ -94,56 +94,36 @@ const USAGE_ITEMS = [
   },
 ];
 
-const PROJECTS = [
-  {
-    name: "task-fusion-ai-powered",
-    url: "task-fusion-ai-powered.vercel.app",
-    repo: "lwshakib/task-fusion-ai-powered",
-    commit: "docs(readme): add demo images for dark and light modes",
-    time: "23h ago",
-    branch: "main",
-    icon: "/globe.svg",
-  },
-  {
-    name: "vision-agentic-ai",
-    url: "vision-agentic-ai.vercel.app",
-    repo: "lwshakib/vision-agentic-ai",
-    commit: "feat(main): add Suspense boundary with loading fallback to m...",
-    time: "Dec 23",
-    branch: "main",
-    icon: "/globe.svg",
-  },
-  {
-    name: "loop-social-platform",
-    url: "loop-social-platform.vercel.app",
-    repo: "lwshakib/loop-social-platform",
-    commit: "fix(ui): update react-resizable-panels dependency and fix com...",
-    time: "Dec 23",
-    branch: "main",
-    icon: "/globe.svg",
-  },
-  {
-    name: "a2a-agentic-workflow-automation",
-    url: "a2a-agentic-workflow-automation.vercel.app",
-    repo: "lwshakib/a2a-agentic-work-...",
-    commit: "refactor(executions): add Suspense with skeleton loading for e...",
-    time: "Dec 23",
-    branch: "main",
-    icon: "/globe.svg",
-  },
-  {
-    name: "infera-notebook",
-    url: "infera-notebook.vercel.app",
-    repo: "lwshakib/infera-notebook",
-    commit: "feat: add AnimatedGroup UI component with various animation...",
-    time: "Dec 23",
-    branch: "main",
-    icon: "/globe.svg",
-  },
-];
+import React, { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { authClient } from "@/lib/auth-client";
+
+const SERVER_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4000";
 
 export default function OverviewPage() {
   const router = useRouter();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const res = await fetch(`${SERVER_URL}/api/project`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground p-6 pt-10">
       {/* Top Bar */}
@@ -277,74 +257,88 @@ export default function OverviewPage() {
         <div className="lg:col-span-3">
           <h2 className="text-sm font-semibold mb-4">Projects</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {PROJECTS.map((project) => (
-              <Card
-                key={project.name}
-                className="bg-background border-border hover:border-border/80 transition-colors"
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border border-border overflow-hidden">
-                        <img
-                          src={project.icon}
-                          alt=""
-                          className="h-5 w-5 dark:invert"
-                        />
+            {loading ? (
+              <div className="col-span-full py-10 flex justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-800" />
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="col-span-full border border-dashed rounded-lg p-10 text-center text-muted-foreground">
+                No projects yet. Create one to get started!
+              </div>
+            ) : (
+              projects.map((project) => (
+                <Card
+                  key={project.id}
+                  className="bg-background border-border hover:border-border/80 transition-colors cursor-pointer group"
+                  onClick={() => router.push(`/project/${project.id}`)}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border border-border overflow-hidden">
+                          <img
+                            src={"/globe.svg"}
+                            alt=""
+                            className="h-5 w-5 dark:invert"
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold leading-none mb-1 group-hover:underline">
+                            {project.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground leading-none">
+                            {project.subDomain}.localhost:8000
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-semibold leading-none mb-1">
-                          {project.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground leading-none">
-                          {project.url}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground"
-                      >
-                        <Zap className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="bg-muted hover:bg-muted text-[10px] h-5 px-2 gap-1.5 font-normal rounded-full border border-border"
-                      >
-                        <Github className="h-3 w-3" />
-                        {project.repo}
-                      </Badge>
-                    </div>
-
-                    <p className="text-[11px] text-muted-foreground line-clamp-1">
-                      {project.commit}
-                    </p>
-
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <span>{project.time} ago on</span>
-                      <div className="flex items-center gap-1">
-                        <GitBranch className="h-3 w-3" />
-                        <span>{project.branch}</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Handle logic
+                          }}
+                        >
+                          <Zap className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="bg-muted hover:bg-muted text-[10px] h-5 px-2 gap-1.5 font-normal rounded-full border border-border"
+                        >
+                          <Github className="h-3 w-3" />
+                          {project.repoName || "repo-name"}
+                        </Badge>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground line-clamp-1">
+                        Deployment Status:{" "}
+                        {project.Deployment?.[0]?.status || "Active"}
+                      </p>
+
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <span>
+                          Created{" "}
+                          {formatDistanceToNow(new Date(project.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <GitBranch className="h-3 w-3" />
+                          <span>main</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -55,6 +55,11 @@ function ImportProjectContent() {
   const [envVariables, setEnvVariables] = React.useState<
     { key: string; value: string }[]
   >([{ key: "", value: "" }]);
+  /* Override States */
+  const [overrideBuild, setOverrideBuild] = React.useState(false);
+  const [overrideOutput, setOverrideOutput] = React.useState(false);
+  const [overrideInstall, setOverrideInstall] = React.useState(false);
+
   const [isDeploying, setIsDeploying] = React.useState(false);
   const [logs, setLogs] = React.useState<string[]>([]);
   const [deploymentId, setDeploymentId] = React.useState<string | null>(null);
@@ -122,8 +127,10 @@ function ImportProjectContent() {
       if (res.ok) {
         const data = await res.json();
         toast.success("Project created successfully!");
-        setDeploymentId(data.deployment.id);
-        // We could redirect or show progress
+        // Redirect to success page to watch logs
+        router.push(
+          `/project/new/success?deploymentId=${data.deployment.id}&projectId=${data.project.id}`
+        );
       } else {
         const data = await res.json();
         toast.error(data.message || "Failed to create project");
@@ -302,7 +309,7 @@ function ImportProjectContent() {
                 <AccordionContent className="px-6 py-6 space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 w-full mr-4">
                         <Label className="text-sm font-medium">
                           Build Command
                         </Label>
@@ -310,10 +317,14 @@ function ImportProjectContent() {
                           placeholder="npm run build"
                           value={buildCommand}
                           onChange={(e) => setBuildCommand(e.target.value)}
-                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1"
+                          disabled={!overrideBuild}
+                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1 disabled:opacity-50"
                         />
                       </div>
-                      <Switch />
+                      <Switch
+                        checked={overrideBuild}
+                        onCheckedChange={setOverrideBuild}
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5 w-full mr-4">
@@ -324,10 +335,14 @@ function ImportProjectContent() {
                           placeholder="public"
                           value={outputDirectory}
                           onChange={(e) => setOutputDirectory(e.target.value)}
-                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1"
+                          disabled={!overrideOutput}
+                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1 disabled:opacity-50"
                         />
                       </div>
-                      <Switch />
+                      <Switch
+                        checked={overrideOutput}
+                        onCheckedChange={setOverrideOutput}
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5 w-full mr-4">
@@ -338,10 +353,14 @@ function ImportProjectContent() {
                           placeholder="npm install"
                           value={installCommand}
                           onChange={(e) => setInstallCommand(e.target.value)}
-                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1"
+                          disabled={!overrideInstall}
+                          className="bg-black/50 border-zinc-800 h-8 text-xs mt-1 disabled:opacity-50"
                         />
                       </div>
-                      <Switch />
+                      <Switch
+                        checked={overrideInstall}
+                        onCheckedChange={setOverrideInstall}
+                      />
                     </div>
                   </div>
                 </AccordionContent>

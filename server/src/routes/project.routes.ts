@@ -13,6 +13,25 @@ const router = express.Router();
 router.use(requireAuth);
 
 /**
+ * Get all projects for the authenticated user.
+ */
+router.get("/", async (req, res) => {
+  // @ts-ignore
+  const user = req.user;
+
+  try {
+    const projects = await prisma.project.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(projects);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    res.status(500).json({ message: "Failed to fetch projects" });
+  }
+});
+
+/**
  * Create a new project and trigger initial deployment.
  */
 router.post("/new", async (req, res) => {
