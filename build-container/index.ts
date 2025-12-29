@@ -1,8 +1,6 @@
 import { exec, type ExecException } from "child_process";
 import path from "path";
-import fs from "fs";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import mime from "mime-types";
+import fs from "fs-extra";
 import { Kafka, type Producer } from "kafkajs";
 import { ReadStream } from "fs";
 
@@ -12,26 +10,20 @@ import { ReadStream } from "fs";
 const PROJECT_ID: string | undefined = process.env.PROJECT_ID;
 const DEPLOYMENT_ID: string | undefined = process.env.DEPLOYMENT_ID;
 
-const S3_BUCKET_NAME: string | undefined = process.env.S3_BUCKET_NAME;
-
-if (!PROJECT_ID || !DEPLOYMENT_ID || !S3_BUCKET_NAME) {
+if (!PROJECT_ID || !DEPLOYMENT_ID) {
   throw new Error(
-    "Missing required environment variables: PROJECT_ID, DEPLOYMENT_ID, or S3_BUCKET_NAME"
+    "Missing required environment variables: PROJECT_ID or DEPLOYMENT_ID"
   );
 }
 
-/**
- * AWS S3 Client
- */
-const s3Client = new S3Client({
-  region: "ap-south-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "test",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "test",
-  },
-  endpoint: process.env.AWS_ENDPOINT,
-  forcePathStyle: true,
-});
+const VALID_PROJECT_ID: string = PROJECT_ID!;
+const VALID_DEPLOYMENT_ID: string = DEPLOYMENT_ID!;
+
+// No S3 Client needed for local storage
+const BUCKET_PATH = path.join(__dirname, "bucket");
+if (!fs.existsSync(BUCKET_PATH)) {
+  fs.mkdirSync(BUCKET_PATH);
+}
 
 /**
  * Kafka setup
@@ -39,24 +31,6 @@ const s3Client = new S3Client({
 const kafka = new Kafka({
   clientId: `docker-build-server-${DEPLOYMENT_ID}`,
   brokers: [process.env.KAFKA_BROKER!],
-  ssl: process.env.KAFKA_CA_FILE
-    ? {
-        ca: [
-          fs.readFileSync(
-            path.join(__dirname, process.env.KAFKA_CA_FILE),
-            "utf-8"
-          ),
-        ],
-      }
-    : undefined,
-  sasl:
-    process.env.KAFKA_USERNAME && process.env.KAFKA_PASSWORD
-      ? {
-          username: process.env.KAFKA_USERNAME,
-          password: process.env.KAFKA_PASSWORD,
-          mechanism: "plain",
-        }
-      : undefined,
 });
 
 const producer: Producer = kafka.producer();
@@ -153,17 +127,16 @@ async function init(): Promise<void> {
         console.log("uploading", filePath);
         await publishLog(`uploading ${relativeFile}`);
 
-        const body: ReadStream = fs.createReadStream(filePath);
-
-        const command = new PutObjectCommand({
-          Bucket: S3_BUCKET_NAME,
-          Key: `__outputs/${PROJECT_ID}/${relativeFile}`,
-          Body: body,
-          ContentType: mime.lookup(filePath) || "application/octet-stream",
-        });
+        const destinationPath = path.join(
+          BUCKET_PATH,
+          "__outputs",
+          PROJECT_ID,
+          relativeFile
+        );
 
         try {
-          await s3Client.send(command);
+          await fs.ensureDir(path.dirname(destinationPath));
+          await fs.copy(filePath, destinationPath);
           await publishLog(`uploaded ${relativeFile}`);
           console.log("uploaded", filePath);
         } catch (uploadError) {

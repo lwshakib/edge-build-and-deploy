@@ -1,26 +1,23 @@
 # Edge Build and Deploy 🚀
 
-A high-performance deployment platform that clones Git repositories, builds them using Bun, and serves them via a custom reverse proxy.
+A high-performance deployment platform that clones Git repositories, builds them locally using Docker, and serves them via a custom reverse proxy from a local storage.
 
 ## 🏗️ Architecture
 
 - **Web Dashboard**: Next.js app to manage projects and deployments.
-- **Server**: Node.js/Express backend handling orchestration and ECS task management.
-- **Build Container**: A specialized Docker container that builds projects and uploads to S3.
-- **Custom Reverse Proxy**: Maps subdomains to S3 outputs for ultra-fast serving.
-- **Infrastructure**: Kafka (logs), PostgreSQL (data), Redis (cache), ClickHouse (analytics), S3 (storage).
+- **Server**: Node.js/Express backend that triggers local Docker builds.
+- **Build Container**: A specialized container that builds projects and saves outputs to a shared `bucket` folder.
+- **Custom Reverse Proxy**: Maps subdomains to the local `bucket` folder for ultra-fast serving.
+- **Infrastructure**: Kafka (logs), PostgreSQL (data), ClickHouse (analytics), MailHog (email).
 
 ---
 
-## 🏠 Local Development (Zero AWS)
-
-You can run the entire stack on your local machine using **Docker Compose** and **LocalStack**.
+## 🏠 Local Development (No AWS Required)
 
 ### 1. Prerequisites
 
 - Docker & Docker Compose
 - Bun (for local testing)
-- AWS CLI Local (optional, for debugging S3/ECS locally)
 
 ### 2. Spin up the Infrastructure
 
@@ -30,46 +27,44 @@ docker-compose up -d
 
 This starts:
 
-- **LocalStack**: Mocks S3 and ECS.
 - **Kafka & Zookeeper**: Event streaming.
 - **PostgreSQL**: Project metadata.
-- **Redis**: Caching and sessions.
 - **ClickHouse**: Analytics logs.
 - **MailHog**: Local email testing.
 
-### 3. Setup Local S3
+### 3. Setup Services
 
-Ensure you create the bucket in LocalStack:
+1.  **Build Container**:
+    ```bash
+    cd build-container
+    docker build -t build-container:latest .
+    cd ..
+    ```
+2.  **Server**:
+    ```bash
+    cd server
+    bun install
+    bun prisma generate
+    bun prisma db push
+    bun run src/index.ts
+    ```
+3.  **Reverse Proxy**:
+    ```bash
+    cd custom-reverse-proxy
+    bun install
+    bun run index.ts
+    ```
 
-```bash
-# Using awslocal
-awslocal s3 mb s3://my-deployment-bucket
-```
+### 4. How it works
 
-### 4. Configure Services
-
-Update the `.env` files in `server/`, `build-container/`, and `custom-reverse-proxy/` to point to `localstack`.
-
-#### Example `.env` settings:
-
-```env
-# AWS Configuration
-AWS_ACCESS_KEY_ID=test
-AWS_SECRET_ACCESS_KEY=test
-AWS_REGION=ap-south-1
-AWS_ENDPOINT=http://localhost:4566
-
-# S3 Configuration
-S3_BUCKET_NAME=my-deployment-bucket
-S3_BASE_URL=http://localhost:4566/my-deployment-bucket/__outputs
-```
+- The **Server** triggers a `docker run` command with a volume mount: `-v d:\edge-build-and-deploy\bucket:/home/app/bucket`.
+- The **Build Container** writes build outputs to `/home/app/bucket/__outputs/PROJECT_ID`.
+- The **Reverse Proxy** reads from `d:\edge-build-and-deploy\bucket\__outputs\SUBDOMAIN`.
 
 ---
 
-## 🚀 Deployment
+## 🚀 Deployment Guidelines
 
-Refer to individual service READMEs for specific deployment guides:
-
-- [Build Container](./build-container/README.md)
-- [Custom Reverse Proxy](./custom-reverse-proxy/README.md)
-- [Server](./server/README.md)
+- [Build Container](./build-container/GUIDELINE.md)
+- [Server](./server/GUIDELINE.md)
+- [Reverse Proxy](./custom-reverse-proxy/README.md)

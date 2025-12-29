@@ -9,14 +9,6 @@ import { v4 as uuidv4 } from "uuid";
 const kafka = new Kafka({
   clientId: "frequency-chat-app",
   brokers: [`${KAFKA_BROKER}`],
-  // ssl: {
-  //   ca: process.env.KAFKA_CERTIFICATE,
-  // },
-  // sasl: {
-  //   mechanism: "plain", // Or "scram-sha-256"/"scram-sha-512" depending on provider
-  //   username: process.env.KAFKA_USERNAME,
-  //   password: process.env.KAFKA_PASSWORD,
-  // },
   connectionTimeout: 30000,
   requestTimeout: 60000,
   retry: {

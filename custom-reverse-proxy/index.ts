@@ -1,50 +1,30 @@
 import express, { type Request, type Response } from "express";
-import httpProxy from "http-proxy";
-import type { ProxyReqCallback } from "http-proxy";
-import { IncomingMessage, ServerResponse, ClientRequest } from "http";
+import path from "path";
+import fs from "fs-extra";
+
+const BUCKET_PATH = path.join(__dirname, "..", "bucket");
+
+if (!fs.existsSync(BUCKET_PATH)) {
+  fs.mkdirSync(BUCKET_PATH);
+}
 
 const app = express();
 const PORT = 8000 as const;
 
-const BASE_PATH = process.env.S3_BASE_URL;
-
-if (!BASE_PATH) {
-  throw new Error("Missing S3_BASE_URL environment variable");
-}
-
-// http-proxy does not provide perfect generics for Express,
-// but createProxyServer is the typed entry point
-const proxy = httpProxy.createProxyServer({});
-
 // Main reverse-proxy middleware
-app.use((req: Request, res: Response) => {
+app.use(async (req: Request, res: Response) => {
   const hostname: string = req.hostname;
   const subdomain: string = hostname.split(".")[0] ?? "";
 
-  // TODO: If hostname may not contain a subdomain (e.g. localhost),
-  // handle fallback or validation here.
-  // Custom Domain - DB Query could resolve this dynamically
+  const filePath = req.path === "/" ? "index.html" : req.path;
+  const localFile = path.join(BUCKET_PATH, "__outputs", subdomain, filePath);
 
-  const resolvesTo: string = `${BASE_PATH}/${subdomain}`;
-
-  proxy.web(req, res, {
-    target: resolvesTo,
-    changeOrigin: true,
-  });
-});
-
-// Proxy request mutation
-proxy.on(
-  "proxyReq",
-  (proxyReq: ClientRequest, req: IncomingMessage, _res: ServerResponse) => {
-    const url: string | undefined = req.url;
-
-    if (url === "/") {
-      // http-proxy mutates the outgoing path directly
-      proxyReq.path += "index.html";
-    }
+  if (fs.existsSync(localFile)) {
+    res.sendFile(localFile);
+  } else {
+    res.status(404).send("Not Found");
   }
-);
+});
 
 app.listen(PORT, () => {
   console.log(`Reverse Proxy Running..${PORT}`);

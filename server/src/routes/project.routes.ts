@@ -3,32 +3,12 @@ import { prisma } from "../services/prisma.services";
 import { requireAuth } from "../middlewares/auth.middlewares";
 import crypto from "node:crypto";
 import { generateSlug } from "random-word-slugs";
-import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
-import {
-  AWS_ACCESS_KEY_ID,
-  AWS_SECRET_ACCESS_KEY,
-  AWS_REGION,
-  ECS_CLUSTER_ARN,
-  ECS_TASK_DEFINITION_ARN,
-  ECS_SUBNET_IDS,
-  ECS_SECURITY_GROUP_IDS,
-  AWS_ENDPOINT,
-  KAFKA_BROKER,
-  KAFKA_USERNAME,
-  KAFKA_PASSWORD,
-  KAFKA_CA_FILE,
-} from "../env";
+import { KAFKA_BROKER } from "../env";
+import { exec } from "node:child_process";
 
 const router = express.Router();
 
-const ecsClient = new ECSClient({
-  region: AWS_REGION,
-  credentials: {
-    accessKeyId: AWS_ACCESS_KEY_ID,
-    secretAccessKey: AWS_SECRET_ACCESS_KEY,
-  },
-  endpoint: AWS_ENDPOINT,
-});
+// No ECS Client needed for local execution
 
 router.use(requireAuth);
 
@@ -89,50 +69,29 @@ router.post("/new", async (req, res) => {
       },
     });
 
-    // Trigger ECS Task for deployment
-    const command = new RunTaskCommand({
-      cluster: ECS_CLUSTER_ARN,
-      taskDefinition: ECS_TASK_DEFINITION_ARN,
-      launchType: "FARGATE",
-      count: 1,
-      networkConfiguration: {
-        awsvpcConfiguration: {
-          assignPublicIp: "ENABLED",
-          subnets: ECS_SUBNET_IDS,
-          securityGroups: ECS_SECURITY_GROUP_IDS,
-        },
-      },
-      overrides: {
-        containerOverrides: [
-          {
-            name: "builder-image", // Ensure this matches your Task Definition container name
-            environment: [
-              {
-                name: "GIT_REPOSITORY__URL",
-                value: `https://github.com/${project.repoName}`,
-              },
-              { name: "PROJECT_ID", value: project.id },
-              { name: "DEPLOYMENT_ID", value: deployment.id },
-              { name: "FRAMEWORK", value: project.framework },
-              { name: "BUILD_COMMAND", value: project.buildCommand || "" },
-              {
-                name: "OUTPUT_DIRECTORY",
-                value: project.outputDirectory || "",
-              },
-              { name: "INSTALL_COMMAND", value: project.installCommand || "" },
-              { name: "KAFKA_BROKER", value: KAFKA_BROKER },
-              { name: "KAFKA_USERNAME", value: KAFKA_USERNAME || "" },
-              { name: "KAFKA_PASSWORD", value: KAFKA_PASSWORD || "" },
-              { name: "KAFKA_CA_FILE", value: KAFKA_CA_FILE || "" },
-              { name: "AWS_ACCESS_KEY_ID", value: AWS_ACCESS_KEY_ID },
-              { name: "AWS_SECRET_ACCESS_KEY", value: AWS_SECRET_ACCESS_KEY },
-            ],
-          },
-        ],
-      },
-    });
+    // Trigger local Docker container for deployment
+    const envVars = [
+      `GIT_REPOSITORY__URL=https://github.com/${project.repoName}`,
+      `PROJECT_ID=${project.id}`,
+      `DEPLOYMENT_ID=${deployment.id}`,
+      `FRAMEWORK=${project.framework}`,
+      `BUILD_COMMAND=${project.buildCommand || ""}`,
+      `OUTPUT_DIRECTORY=${project.outputDirectory || ""}`,
+      `INSTALL_COMMAND=${project.installCommand || ""}`,
+      `KAFKA_BROKER=${KAFKA_BROKER}`,
+    ];
 
-    await ecsClient.send(command);
+    const envString = envVars.map((e) => `-e ${e}`).join(" ");
+
+    const dockerCommand = `docker run --rm ${envString} -v d:\\edge-build-and-deploy\\bucket:/home/app/bucket build-container:latest`;
+
+    exec(dockerCommand, (err, stdout, stderr) => {
+      if (err) {
+        console.error("Error running docker container:", err);
+      }
+      if (stdout) console.log("Docker stdout:", stdout);
+      if (stderr) console.error("Docker stderr:", stderr);
+    });
 
     res.json({ project, deployment });
   } catch (error) {
@@ -166,42 +125,24 @@ router.post("/deploy", async (req, res) => {
       },
     });
 
-    const command = new RunTaskCommand({
-      cluster: ECS_CLUSTER_ARN,
-      taskDefinition: ECS_TASK_DEFINITION_ARN,
-      launchType: "FARGATE",
-      count: 1,
-      networkConfiguration: {
-        awsvpcConfiguration: {
-          assignPublicIp: "ENABLED",
-          subnets: ECS_SUBNET_IDS,
-          securityGroups: ECS_SECURITY_GROUP_IDS,
-        },
-      },
-      overrides: {
-        containerOverrides: [
-          {
-            name: "builder-image",
-            environment: [
-              {
-                name: "GIT_REPOSITORY__URL",
-                value: `https://github.com/${project.repoName}`,
-              },
-              { name: "PROJECT_ID", value: project.id },
-              { name: "DEPLOYMENT_ID", value: deployment.id },
-              { name: "KAFKA_BROKER", value: KAFKA_BROKER },
-              { name: "KAFKA_USERNAME", value: KAFKA_USERNAME || "" },
-              { name: "KAFKA_PASSWORD", value: KAFKA_PASSWORD || "" },
-              { name: "KAFKA_CA_FILE", value: KAFKA_CA_FILE || "" },
-              { name: "AWS_ACCESS_KEY_ID", value: AWS_ACCESS_KEY_ID },
-              { name: "AWS_SECRET_ACCESS_KEY", value: AWS_SECRET_ACCESS_KEY },
-            ],
-          },
-        ],
-      },
-    });
+    const envVars = [
+      `GIT_REPOSITORY__URL=https://github.com/${project.repoName}`,
+      `PROJECT_ID=${project.id}`,
+      `DEPLOYMENT_ID=${deployment.id}`,
+      `KAFKA_BROKER=${KAFKA_BROKER}`,
+    ];
 
-    await ecsClient.send(command);
+    const envString = envVars.map((e) => `-e ${e}`).join(" ");
+
+    const dockerCommand = `docker run --rm ${envString} -v d:\\edge-build-and-deploy\\bucket:/home/app/bucket build-container:latest`;
+
+    exec(dockerCommand, (err, stdout, stderr) => {
+      if (err) {
+        console.error("Error running docker container manual deploy:", err);
+      }
+      if (stdout) console.log("Docker stdout:", stdout);
+      if (stderr) console.error("Docker stderr:", stderr);
+    });
 
     res.json({ status: "queued", deploymentId: deployment.id });
   } catch (error) {
