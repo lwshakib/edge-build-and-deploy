@@ -28,6 +28,9 @@ if (!fs.existsSync(BUCKET_PATH)) {
 /**
  * Kafka setup
  */
+console.log("Initializing Kafka with broker:", process.env.KAFKA_BROKER);
+console.log("Deployment ID:", DEPLOYMENT_ID);
+
 const kafka = new Kafka({
   clientId: `docker-build-server-${DEPLOYMENT_ID}`,
   brokers: [process.env.KAFKA_BROKER!],
@@ -130,7 +133,8 @@ async function init(): Promise<void> {
         const destinationPath = path.join(
           BUCKET_PATH,
           "__outputs",
-          PROJECT_ID,
+          VALID_PROJECT_ID,
+          VALID_DEPLOYMENT_ID,
           relativeFile
         );
 

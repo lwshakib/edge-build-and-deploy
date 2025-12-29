@@ -36,7 +36,7 @@ docker build -t build-container:latest .
 To test the flow manually, run the container with the required environment variables and mount the local `bucket` folder:
 
 ```powershell
-docker run -e PROJECT_ID="local-project" -e DEPLOYMENT_ID="local-deploy" -e KAFKA_BROKER="host.docker.internal:9092" -e GIT_REPOSITORY__URL="https://github.com/user/your-repo" -v d:\edge-build-and-deploy\bucket:/home/app/bucket build-container:latest
+docker run -e PROJECT_ID="local-project" -e DEPLOYMENT_ID="local-deploy" -e KAFKA_BROKER="host.docker.internal:9092" -e GIT_REPOSITORY__URL="https://github.com/lwshakib/vite-app.git" -v d:\edge-build-and-deploy\bucket:/home/app/bucket build-container:latest
 ```
 
 ---

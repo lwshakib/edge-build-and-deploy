@@ -69,6 +69,12 @@ router.post("/new", async (req, res) => {
       },
     });
 
+    // For Docker container to access host Kafka (Windows/Mac)
+    let kafkaBroker = KAFKA_BROKER;
+    if (kafkaBroker.includes("localhost")) {
+      kafkaBroker = kafkaBroker.replace("localhost", "host.docker.internal");
+    }
+
     // Trigger local Docker container for deployment
     const envVars = [
       `GIT_REPOSITORY__URL=https://github.com/${project.repoName}`,
@@ -78,7 +84,7 @@ router.post("/new", async (req, res) => {
       `BUILD_COMMAND=${project.buildCommand || ""}`,
       `OUTPUT_DIRECTORY=${project.outputDirectory || ""}`,
       `INSTALL_COMMAND=${project.installCommand || ""}`,
-      `KAFKA_BROKER=${KAFKA_BROKER}`,
+      `KAFKA_BROKER=${kafkaBroker}`,
     ];
 
     const envString = envVars.map((e) => `-e ${e}`).join(" ");
@@ -125,11 +131,17 @@ router.post("/deploy", async (req, res) => {
       },
     });
 
+    // For Docker container to access host Kafka (Windows/Mac)
+    let kafkaBroker = KAFKA_BROKER;
+    if (kafkaBroker.includes("localhost")) {
+      kafkaBroker = kafkaBroker.replace("localhost", "host.docker.internal");
+    }
+
     const envVars = [
       `GIT_REPOSITORY__URL=https://github.com/${project.repoName}`,
       `PROJECT_ID=${project.id}`,
       `DEPLOYMENT_ID=${deployment.id}`,
-      `KAFKA_BROKER=${KAFKA_BROKER}`,
+      `KAFKA_BROKER=${kafkaBroker}`,
     ];
 
     const envString = envVars.map((e) => `-e ${e}`).join(" ");

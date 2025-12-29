@@ -1,0 +1,7 @@
+procs:
+  web:
+    shell: "cd web && bun run dev"
+  server:
+    shell: "cd server && bun run dev"
+  proxy:
+    shell: "cd custom-reverse-proxy && bun run --watch index.ts"

@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { produceMessage, produceUserPresence } from "./kafka.services";
 import { auth } from "./auth.services";
 import { fromNodeHeaders } from "better-auth/node";
-import { pub, sub } from "./redis.services";
+import { eventBus, EVENTS } from "./eventBus";
 
 class SocketService {
   private _io: Server;
@@ -32,8 +32,11 @@ class SocketService {
       }
     });
 
-    sub.subscribe("MESSAGES");
-    sub.subscribe("LOGS");
+    // Handle logs from eventBus
+    eventBus.on(EVENTS.LOG_RECEIVED, ({ deploymentId, log }) => {
+      console.log("Broadcasting log to room:", deploymentId);
+      this._io.to(deploymentId).emit("log", log);
+    });
   }
 
   initListeners() {
@@ -68,7 +71,18 @@ class SocketService {
       handleConnectionPresence();
 
       socket.on("event:message", async (data: any) => {
-        await pub.publish("MESSAGES", JSON.stringify(data));
+        const users = data.conversation?.users;
+
+        if (users && users.length > 0) {
+          users.forEach((user: any) => {
+            console.log("Sending message to user : ", user.id);
+            io.to(user.id).emit("message", {
+              message: data.message,
+              conversation: data.conversation,
+            });
+          });
+        }
+        await produceMessage(JSON.stringify({ message: data.message }));
       });
 
       socket.on("join:server", (userId: string) => {
@@ -188,27 +202,6 @@ class SocketService {
           console.error("Failed to produce presence (disconnect)", e);
         }
       });
-    });
-    sub.on("message", async (channel: string, data: string) => {
-      if (channel === "MESSAGES") {
-        const data2 = JSON.parse(data);
-        const users = data2.conversation?.users;
-
-        if (users.length > 0) {
-          users.forEach((user: any) => {
-            console.log("Sending message to user : ", user.id);
-            io.to(user.id).emit("message", {
-              message: data2.message,
-              conversation: data2.conversation,
-            });
-          });
-        }
-        await produceMessage(JSON.stringify({ message: data2.message }));
-      } else if (channel === "LOGS") {
-        const { deploymentId, log } = JSON.parse(data);
-        console.log("Broadcasting log to room:", deploymentId);
-        io.to(deploymentId).emit("log", log);
-      }
     });
   }
 

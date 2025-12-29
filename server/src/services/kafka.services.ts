@@ -3,7 +3,7 @@ import { Kafka, type Producer, type Consumer } from "kafkajs";
 import { prisma } from "./prisma.services";
 import { KAFKA_BROKER } from "../env";
 import { insertLog } from "./clickhouse.services";
-import { pub } from "./redis.services";
+import { eventBus, EVENTS } from "./eventBus";
 import { v4 as uuidv4 } from "uuid";
 
 const kafka = new Kafka({
@@ -278,11 +278,11 @@ export async function startLogConsumer() {
             log,
           });
 
-          // Publish to Redis for Socket.io
-          await pub.publish(
-            "LOGS",
-            JSON.stringify({ deploymentId: DEPLOYMENT_ID, log })
-          );
+          // Emit to eventBus for Socket.io
+          eventBus.emit(EVENTS.LOG_RECEIVED, {
+            deploymentId: DEPLOYMENT_ID,
+            log,
+          });
         } catch (err) {
           console.error("Error processing log message:", err);
         }
